@@ -1,0 +1,20 @@
+client
+send profile
+
+server (profile)
+save profile
+public = crypt key pair (RSA-1024)
+verify = random 4 bytes
+send public, verify
+
+
+client (public, verify)
+secret = generate key
+hash = sha1("", public, secret)
+join profile, session token, hash
+send secret, public, verify
+
+server (secret, public, verify)
+check verify matches
+hash = sha1(public, secret)
+hasjoined name, hash
