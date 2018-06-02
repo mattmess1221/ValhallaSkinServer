@@ -4,20 +4,9 @@ import functools
 import sqlite3
 import time
 
-from.import mojang
+from .mojang import fetch_profile_name
 
 
-def singleton(class_):
-    instances = {}
-
-    def getinstance(*args, **kwargs):
-        if class_ not in instances:
-            instances[class_] = class_(*args, **kwargs)
-        return instances[class_]
-    return getinstance
-
-
-@singleton
 class Database(object):
     """An instance of a sql database"""
 
@@ -26,10 +15,14 @@ class Database(object):
 
     def setup(self):
         with self:
-            self.cursor.executescript("""CREATE TABLE IF NOT EXISTS Users (
+            self.cursor.executescript("""CREATE TABLE IF NOT EXISTS HDSkins (
+                Version     INT         NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS Users (
                 ID          INT         PRIMARY KEY AUTOINCREMENT,
                 ProfileId   CHAR(32)    NOT NULL UNIQUE,
-                ProfileName CHAR(16)    NOT NULL
+                ProfileName CHAR(16)    NOT NULL,
+                Fetched     TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS Textures (
                 ID          INT         PRIMARY KEY AUTOINCREMENT,
@@ -38,6 +31,11 @@ class Database(object):
                 TextureURL  TEXT        NOT NULL,
                 UploaderIP  TEXT        NOT NULL,
                 UploadTime  TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS EnabledSkins (
+                ID          INT         PRIMARY KEY AUTOINCREMENT,
+                UserId      INT         NOT NULL,
+                TextureId   INT         NOT NULL
             );
             CREATE TABLE IF NOT EXISTS Metadata (
                 ID          INT         PRIMARY KEY AUTOINCREMENT,
@@ -52,15 +50,26 @@ class Database(object):
         return self
 
     def __exit__(self, type, value, traceback):
+        self.connection.commit()
         self.connection.close()
 
     def find_user(self, uuid, put=True):
         self.execute("SELECT * FROM Users WHERE ProfileId=?", (uuid))
         row = self.cursor.fetchone()
-        if row is not None:
-            return User(self, self.cursor.fetchone())
+        if row:
+            user = User(self, self.cursor.fetchone())
+
+            month = 60 * 60 * 24 * 30
+            # FIXME: update user. This logic is probably wrong
+            if time.time - user.time_fetched > month:
+                new_name = fetch_profile_name(uuid)
+                self.execute("""UPDATE Users WHERE ID=? VALUES
+                       (ProfileName ?, Fetched CURRENT_TIMESTAMP) """,
+                             (user._id, new_name))
+
+            return user
         if put:
-            name = mojang.get_name(uuid)
+            name = fetch_profile_name(uuid)
             return self._put_user(uuid, name)
         return None
 
@@ -71,16 +80,21 @@ class Database(object):
     def _put_user(self, uuid, name):
         self.execute("INSERT INTO Users VALUES (?, ?)", (uuid, name))
 
-    def _get_textures(self, userId, time=time.time):
+    def _get_textures(self, userId):
         """Gets a dict of textures from the database if it exists"""
-        self.execute("SELECT * FROM Users WHERE UserId = ?", (userId,))
-        textures = []
-        for row in self.cursor:
-            textures.append(Texture(self, row))
+        self.execute(
+            "SELECT TextureId FROM EnabledSkins WHERE UserId = ?",
+            (userId,))
 
-        # Filter so the date is only 1
+        for (t_id,) in self.cursor:
+            t = self._get_texture(t_id)
+            yield t.type, t
 
-        return textures
+    def _get_texture(self, textureId):
+        self.execute(
+            "SELECT * FROM Textures WHERE TextureId = ?", (textureId,))
+
+        return Texture(self, self.cursor.fetchone())
 
     def _put_texture(self, userId, textureUrl, textureType, uploaderIP):
         self.execute("""INSERT INTO Textures VALUES (
@@ -90,11 +104,34 @@ class Database(object):
             UploaderIP ?
             ) """, (userId, textureUrl, textureType, uploaderIP))
 
-        return Texture(self, self.cursor.fetchone())
+        texture = Texture(self, self.cursor.fetchone())
+
+        # TODO: learn sql. This is bad because of concurrent connections
+        self.execute(
+            "SELECT TextureId FROM EnabledSkins WHERE UserId=?", (userId,))
+        for row in self.cursor:
+            tex = self._get_texture(row['TextureId'])
+            if tex.type is textureType:
+                self.execute(
+                    "DELETE FROM EnabledSkins WHERE UserId=? and TextureId=?",
+                    (userId, tex._id))
+                break
+
+        self.execute(
+            "INSERT INTO EnabledSkins VALUES (?, ?)",
+            (userId, texture._id))
+
+        return texture
+
+    def _clear_texture(self, user, texture):
+        self.execute(
+            "DELETE FROM EnabledSkins WHERE UserId=? AND TextureId=?",
+            (user, texture))
+        return bool(self.cursor.rowcount & 1)
 
     def _get_metadata(self, textureId):
         """Gets all metadata for this texture"""
-        self.cursor.execute("SELECT * FROM Metadata WHERE TextureID = ?",
+        self.cursor.execute("SELECT * FROM Metadata WHERE TextureID=?",
                             textureId)
         metadata = []
         for row in self.cursor:
@@ -132,6 +169,9 @@ class User(Row):
     def uniqueId(self): return self._row['ProfileId']
 
     @property
+    def time_fetched(self): return self._row['Fetched']
+
+    @property
     def textures(self): return self._db._get_textures(self._id)
 
     def put_texture(self, url, skinType, uploader):
@@ -160,6 +200,13 @@ class Texture(Row):
 
     def put_metadata(self, key, val):
         return self._db._put_metadata(self._id, key, val)
+
+    def clear(self):
+        """Clears this texture from enabled skins.
+
+        :returns bool: Whether this texture was enabled.
+        """
+        return self._db._clear_texture(self.user, self._id)
 
 
 class Metadata(Row):
