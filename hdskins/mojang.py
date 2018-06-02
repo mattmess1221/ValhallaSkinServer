@@ -2,22 +2,26 @@ import json
 
 import requests
 
-_VALIDATE = "https://authserver.mojang.com/validate"
+# ?username=username&serverId=hash&ip=ip"
+_VALIDATE = "https://sessionserver.mojang.com/session/minecraft/hasJoined"
 _PROFILE = "https://sessionserver.mojang.com/session/minecrafrt/profile/"
 
 
-def validate(accessToken):
-    """Validate's an access token against Mojang's servers
+def validate(name, serverHash, client_addr):
+    """Validates a login against Mojang's servers
 
-    http://wiki.vg/Authentication#Validate
+    http://wiki.vg/Protocol_Encryption#Authentication
     """
-    headers = {"Content-Type": "application/json"}
-    data = {"accessToken": accessToken}
-    response = requests.post(_VALIDATE, json.dumps(data), headers)
-    return response.ok()  # 204 means success, but 403 means fail
+    data = {
+        "username": name,
+        "serverId": serverHash,
+        'ip': client_addr
+    }
+    response = requests.get(_VALIDATE, data)
+    return response.ok  # 204 means success, but 403 means fail
 
 
-def get_name(uuid):
+def fetch_profile_name(uuid):
     """Gets the player's name from Mojang's API.
 
     http://wiki.vg/Mojang_API#UUID_-.3E_Profile_.2B_Skin.2FCape
@@ -25,4 +29,4 @@ def get_name(uuid):
     url = _PROFILE + uuid
 
     response = requests.get(url)
-    return response.json()['name']
+    return response.json().name
