@@ -16,3 +16,4 @@ python_version = "3.5"
 [dev-packages]
 "pep8" = "*"
 pylint = "*"
+rope = "*"

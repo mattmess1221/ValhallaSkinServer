@@ -14,21 +14,19 @@ def choice(*args):
     return r"^(?:" + choices + ")$"
 
 
-class regex(object):
-
-    def __init__(self, **kwargs):
-        self.kwargs = kwargs
+def regex(**regs):
 
     def __call__(self, func):
         @functools.wraps(func)
         def decorator(*args, **kwargs):
-            for (k, v) in self.kwargs:
+            for (k, v) in regs:
                 if type(v) is str:
                     v = re.compile(v)
                 if not v.match(kwargs[k]):
                     raise RegexError("Invalid Input: " + v)
             func(args, kwargs)
         return decorator
+    return __call__
 
 
 class RegexError(ValueError):
