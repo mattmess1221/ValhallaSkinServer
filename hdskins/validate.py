@@ -16,7 +16,7 @@ def choice(*args):
 
 def regex(**regs):
 
-    def __call__(self, func):
+    def callable(self, func):
         @functools.wraps(func)
         def decorator(*args, **kwargs):
             for (k, v) in regs:
@@ -26,7 +26,7 @@ def regex(**regs):
                     raise RegexError("Invalid Input: " + v)
             func(args, kwargs)
         return decorator
-    return __call__
+    return callable
 
 
 class RegexError(ValueError):
