@@ -31,5 +31,5 @@ class regex(object):
         return decorator
 
 
-class RegexError(Exception):
+class RegexError(ValueError):
     pass
