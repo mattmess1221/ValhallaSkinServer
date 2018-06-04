@@ -4,7 +4,7 @@ import requests
 
 # ?username=username&serverId=hash&ip=ip"
 _VALIDATE = "https://sessionserver.mojang.com/session/minecraft/hasJoined"
-_PROFILE = "https://sessionserver.mojang.com/session/minecrafrt/profile/"
+_PROFILE = "https://sessionserver.mojang.com/session/minecraft/profile/"
 
 
 def validate(name, serverHash, client_addr):
@@ -29,4 +29,12 @@ def fetch_profile_name(uuid):
     url = _PROFILE + uuid
 
     response = requests.get(url)
-    return response.json().name
+    json = response.json()
+    if response.ok:
+        return json['name']
+
+    raise MojangError(json['errorMessage'])
+
+
+class MojangError(Exception):
+    pass

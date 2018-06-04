@@ -5,18 +5,19 @@ import functools
 import hashlib
 import os
 import re
-import sqlite3
 import time
+import tempfile
+from io import BytesIO
 
-import imageio
 import requests
 import rsa
 from expiringdict import ExpiringDict
-from flask import Flask, Response, abort, jsonify, make_response, request
+from flask import Flask, Response, abort, jsonify, request, render_template
+from PIL import Image
 
-from.import database, mojang, validate
+from .validate import *
 
-app = Flask(__name__)
+from.import database, mojang
 
 
 def env(key):
@@ -25,11 +26,12 @@ def env(key):
         raise KeyError(key + " not specified")
     return var
 
+
+app = Flask(__name__)
+
 db_file = env('DB_FILE')
 root_dir = env('ROOT_DIR')
 root_url = env('ROOT_URL')
-
-db = database.Database(sqlite3.connect(db_file))
 
 supported_types = ["skin", "cape", "elytra"]
 
@@ -39,100 +41,147 @@ client_keys = ExpiringDict(max_len=100, max_age_seconds=10)
 def authorize(func):
     @functools.wraps(func)
     def decorator(*args, **kwargs):
-        header = request.headers.get("Authorization")
-        access_token = header[7:]  # Splice after Bearer
+        if 'name' not in request.form:
+            raise KeyError("Missing form: name")
+        if 'serverId' not in request.form:
+            raise KeyError("Missing form: serverId")
+        name = request.form['name']
+        server_id = request.form['serverId']
         # Don't save this. It is useless once it is refreshed
-        if not mojang.validate(access_token, "a", request.remote_addr):
-            return abort(make_response(jsonify(message="Not Authorized"), 401))
+        if not mojang.validate(name, server_id, request.remote_addr):
+            return abort(401, jsonify(message="Not Authorized"))
 
-        return func(args, kwargs)
+        return func(*args, **kwargs)
     return decorator
 
 
-@app.route('/user/<user>')
-@validate.regex(user=validate.uuid)
-def get_textures(user):
-    with db:
-        user = db.find_user(user, False)
-        if user is None:
-            abort(Response("User not found", 403))
-        textures = textures_json(user.textures)
-        if not textures:
-            abort(Response("Skins not found", 403))
-        return make_response(jsonify(
-            timestamp=time.time,
-            profileId=user.profileId,
-            profileName=user.name,
-            textures=textures
-        ), 200)
+def metadata_json(data):
+    for meta in data:
+        yield meta.key, meta.val
 
 
 def textures_json(textures):
-    textures = sorted(textures, lambda item: item.timestamp, True)
-    texts = {}
-    for tex in textures:
-        texType = tex.type.upper()
-        if not texts[texType]:  # Only include the first of every type
-            dic = {'url': tex.url}
-            metadata = metadata_json(tex.metadata)
-            if metadata:  # Only include metadata if there is any
-                dic.metadata = metadata
-            texts[texType] = dic
-    return texts
+    print(type(textures))
+    for texType, tex in textures.items():
+        texType = str(texType).upper()
+        dic = {'url': root_url + '/textures/' + tex.url}
+        metadata = dict(metadata_json(tex.metadata))
+        if metadata:  # Only include metadata if there is any
+            dic['metadata'] = metadata
+        yield texType, dic
 
 
-def metadata_json(data):
-    metadata = {}
-    for meta in data:
-        metadata[meta.key] = meta.val
-    return metadata
+@app.route('/user/<user>')
+@regex(user=uuid)
+def get_textures(user):
+
+    with database.Database(db_file) as db:
+        user = db.find_user(user, False)
+        if not user:
+            return abort(403, "User not found")
+        textures = dict(textures_json(dict(user.textures)))
+        print(textures)
+        if not textures:
+            return abort(403, "Skins not found")
+        return jsonify(
+            timestamp=int(time.time()),
+            profileId=user.uniqueId,
+            profileName=user.name,
+            textures=textures
+        ), 200
 
 
 @app.route('/user/<user>/<skinType>', methods=['POST'])
-@validate.regex(user=validate.uuid, skin_type=validate.choice(supported_types))
+@regex(user=uuid, skin_type=choice(*supported_types))
 @authorize
 def change_skin(user, skin_type):
-    model = str(request.form.get("model"))
-    url = str(request.form.get("file"))
+    if 'file' not in request.form:
+        raise ValueError('Missing required form: file')
 
-    skin = copy_image(url)
+    model = request.form["model"]
+    url = request.form.get["file"]
+
+    resp = requests.get(url)
+
+    if resp.ok:
+        skin = gen_skin_hash(resp.content)
+
+        put_texture(user, skin, skin_type, request.remote_addr, model=model)
+
+    return 'OK'
 
 
 @app.route('/user/<user>/<skin_type>', methods=['PUT'])
-@validate.regex(user=validate.uuid, skin_type=validate.choice(supported_types))
+@regex(user=uuid, skin_type=choice(*supported_types))
 @authorize
 def upload_skin(user, skin_type):
 
-    model = str(request.form.get("model"))
-    file = request.form.get("file")
+    if 'file' not in request.files:
+        raise ValueError('Missing required file: file')
+    file = request.files['file']
+    if 'model' in request.form:
+        model = request.form["model"]
+    else:
+        model = None
 
-    skin = copy_image(file)
+    if not file:
+        raise ValueError("Empty file?")
 
-    with db:
+    (image, skin) = gen_skin_hash(file.read())
+
+    image.save(os.path.join(root_dir, "textures", skin), format="PNG")
+
+    # TODO: support for arbitrary metadata
+
+    put_texture(user, skin, skin_type, request.remote_addr, model=model)
+
+    return Response()
+
+
+def gen_skin_hash(image_data):
+
+    image = Image.open(BytesIO(image_data))
+
+    if image.format != "PNG":
+        raise ValueError("Format not allowed: " + image.format)
+
+    # Check size of image.
+    # width should be same as or double the height
+    # Width is then checked for predefined values
+    # 64, 128, 256, 512, 1024
+
+    # set of supported width sizes. Height is either same or half
+    sizes = set([64, 128, 256, 512, 1024])
+    (width, height) = image.size
+    valid = width / 2 == height or width == height
+
+    if not valid or width not in sizes:
+        raise ValueError("Unsupported image size: " + image.size)
+
+    # Create a hash of the image and use it as the filename.
+    return image, hashlib.sha1(image.tobytes()).hexdigest()
+
+
+def put_texture(user, url, skin_type, uploader, **metadata):
+
+    with database.Database(db_file) as db:
         user = db.find_user(user)
-        user.put_texture(skin, model)
-
-    return ('', 200)
-
-
-def copy_image(image):
-    im = imageio.imread(uri=image, format="png")
-    # TODO: check image dimensions.
-    # Needs to be power of 2 between 64 and 1024
-    sha = hashlib.sha1(im).hexdigest()
-    skin = "/textures/" + sha
-    with open(root_dir + skin, "w") as file:
-        imageio.imwrite(uri=file, im=im, format="png")
-
-    return root_url + skin
+        texture = user.put_texture(url, skin_type, uploader)
+        texture.put_metadata(**metadata)
 
 
 @app.route('/user/<user>/<skin_type>', methods=['DELETE'])
-@validate.regex(user=validate.uuid, skin_type=validate.choice(supported_types))
+@regex(user=uuid, skin_type=choice(*supported_types))
 @authorize
 def reset_skin(user, skin_type):
-    # Unimplemented
-    pass
+    with database.Database(db_file) as db:
+        user = db.find_user(user)
+        if user:
+            tex = user.textures[skin_type]
+            if tex and tex.clear():
+                return Response()
+            return abort(404, "Unknown texture")
+        return abort(404, "Unknown user")
 
 
 @app.route('/auth/request', methods=["POST"])
@@ -143,10 +192,19 @@ def auth_request():
 
     TODO: is this really needed? Probably
     """
-    uuid = request.form.get("uuid")
-    ckey = base64.decodebytes(request.form.get("client_key"))
+    def get_form(key):
+        if key not in request.form:
+            raise KeyError("Missing value: " + key)
+        return request.form[key]
 
-    client_keys[uuid] = rsa.PublicKey._load_pkcs1_der(ckey)
+    if 'name' not in request.form:
+        raise KeyError("Missing value: name")
+    if 'shared_key' not in request.form:
+        raise KeyError("Missing value: shared_key")
+    name = get_form("name")
+    ckey = base64.decodebytes(get_form("shared_key"))
+
+    client_keys[name] = rsa.PublicKey._load_pkcs1_der(ckey)
 
     return jsonify(
         public_key=base64.encodebytes(pub_key._save_pkcs1_der())
@@ -158,13 +216,18 @@ def init_auth():
     global pub_key, priv_key
     (pub_key, priv_key) = rsa.newkeys(1024)
 
+    with database.Database(db_file) as db:
+        db.setup()
+
 
 @app.errorhandler(404)
 def notFound(status):
     # Redirect 404 to 403 for security
-    abort(make_response(jsonify(message="Forbidden", status=403), 403))
+    return render_template("403.html"), 403
 
 
-@app.errorhandler(validate.RegexError)
+@app.errorhandler(ValueError)
 def valueError(error):
-    abort(make_response(jsonify(message=error.message, status=400), 400))
+    if app.config['DEBUG']:
+        raise error
+    return jsonify(error=type(error).__name__, message=str(error)), 400
