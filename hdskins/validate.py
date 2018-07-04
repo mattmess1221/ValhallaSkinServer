@@ -3,23 +3,25 @@
 import functools
 import re
 
-uuid = r"^[0-9a-f]{32}$"
 
+class regex(**regs):
 
-def choice(*args):
-    choices = '|'.join(args)
-    return r"^(?:" + choices + ")$"
+    UUID = r"^[0-9a-f]{32}$"
 
+    @staticmethod
+    def choice(*args):
+        choices = '|'.join(args)
+        return r"^(?:" + choices + ")$"
 
-def regex(**regs):
+    def __init__(self, **regs):
+        self.regs = regs
 
-    def callable(func):
+    def __call__(self, func):
         @functools.wraps(func)
         def decorator(*args, **kwargs):
-            for k, v in regs.items():
+            for k, v in self.regs.items():
                 reg = re.compile(v)
                 if not reg.match(kwargs[k]):
                     raise ValueError("Invalid Input: " + kwargs[k])
             return func(*args, **kwargs)
         return decorator
-    return callable
