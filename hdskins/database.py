@@ -14,18 +14,15 @@ class Database(object):
         self.connection = sqlite3.connect(connection)
 
     def setup(self):
-        self.cursor.executescript("""CREATE TABLE IF NOT EXISTS HDSkins (
-            Version     INT         NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS Users (
+        self.cursor.executescript("""CREATE TABLE IF NOT EXISTS Users (
             ID          INTEGER     PRIMARY KEY AUTOINCREMENT,
-            ProfileId   CHAR(32)    NOT NULL UNIQUE,
-            ProfileName CHAR(16)    NOT NULL,
+            UserId      CHAR(32)    NOT NULL UNIQUE,
+            UserName    CHAR(16)    NOT NULL,
             Fetched     TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS Textures (
             ID          INTEGER     PRIMARY KEY AUTOINCREMENT,
-            UserId      INTEGER     NOT NULL,
+            UserId      INTEGER     NOT NULL, -- Users.ID
             TextureType TEXT        NOT NULL,
             TextureURL  TEXT        NOT NULL,
             UploaderIP  TEXT        NOT NULL,
@@ -33,15 +30,23 @@ class Database(object):
         );
         CREATE TABLE IF NOT EXISTS EnabledSkins (
             ID          INTEGER     PRIMARY KEY AUTOINCREMENT,
-            UserId      INTEGER     NOT NULL,
-            TextureId   INTEGER     NOT NULL
+            UserId      INTEGER     NOT NULL, -- Users.ID
+            TextureId   INTEGER     NOT NULL  -- Textures.ID
         );
         CREATE TABLE IF NOT EXISTS Metadata (
             ID          INTEGER     PRIMARY KEY AUTOINCREMENT,
-            TextureID   INTEGER     NOT NULL,
+            TextureID   INTEGER     NOT NULL, -- Textures.ID
             'Key'       TEXT        NOT NULL,
             'Value'     TEXT
-        );""")
+        );
+        CREATE TABLE IF NOT EXISTS AccessTokens (
+            ID          INTEGER     PRIMARY KEY AUTOINCREMENT,
+            UserId      INTEGER     NOT NULL, -- Users.ID
+            Token       TEXT        NOT NULL,
+            IPAddress   TEXT        NOT NULL,  -- user and token have 1 ip
+            Expires     DATETIME    NOT NULL DEFAULT dateadd('day', 1, CURRENT_TIMESTAMP)
+        );
+        """)
         self.connection.commit()
 
     def __enter__(self):
@@ -52,9 +57,9 @@ class Database(object):
         self.connection.commit()
         self.connection.close()
 
-    def find_user(self, uuid, put=True):
-        self.cursor.execute(
-            "SELECT * FROM Users WHERE ProfileId=?", (str(uuid),))
+    def find_user(self, uuid, name=None):
+        self.cursor.execute("SELECT * FROM Users WHERE UserId=?",
+                            (uuid,))
         row = self.cursor.fetchone()
         if row:
             user = User(self, row)
@@ -63,23 +68,30 @@ class Database(object):
             fetched = int(user.time_fetched)
             # FIXME: update user. This logic is probably wrong
             if time.time() - fetched > month:
-                new_name = fetch_profile_name(uuid)
-                self.cursor.execute("""UPDATE Users WHERE ID=?
-                       SET ProfileName = ?, Fetched = CURRENT_TIMESTAMP)""",
-                                    (user._id, new_name))
+                self._update_user(user, name)
 
             return user
-        if put:
-            name = fetch_profile_name(uuid)
-            return self._put_user(uuid, name)
-        return None
+        return self._put_user(uuid, name) if name else None
+
+    def find_access_token(self, token):
+        self.cursor.execute("SELECT * FROM AccessTokens WHERE Token=?",
+                            (token,))
+        row = self.cursor.fetchone()
+        return AccessToken(self, row) if row else None
+
+    def _update_user(self, user, name=None):
+        new_name = name or fetch_profile_name(user.uuid)
+        self.cursor.execute(
+            """UPDATE Users WHERE ID=?
+            SET UserName = ?, Fetched = CURRENT_TIMESTAMP""",
+            (user._id, new_name))
 
     def _get_user(self, id):
         self.cursor.execute("SELECT * FROM Users WHERE ID=?", (id,))
         return User(self, self.cursor.fetchone())
 
     def _put_user(self, uuid, name):
-        self.cursor.execute("""INSERT INTO Users (ProfileId, ProfileName)
+        self.cursor.execute("""INSERT INTO Users (UserId, UserName)
             VALUES(?, ?)""", (uuid, name))
         return self._get_user(self.cursor.lastrowid)
 
@@ -102,15 +114,16 @@ class Database(object):
 
     def _put_texture(self, userId, textureUrl, textureType, uploaderIP):
         self.cursor.execute("""INSERT INTO Textures
-            (UserId, TextureURL, TextureType, UploaderIP)
-            VALUES(?, ?, ?, ?)""",
+                            (UserId, TextureURL, TextureType, UploaderIP)
+                            VALUES(?, ?, ?, ?)""",
                             (userId, textureUrl, textureType, uploaderIP))
 
         texture = self._get_texture(self.cursor.lastrowid)
 
         # TODO: learn sql. This is bad because of concurrent connections
         self.cursor.execute(
-            "SELECT TextureId FROM EnabledSkins WHERE UserId=?", (userId,))
+            "SELECT TextureId FROM EnabledSkins WHERE UserId=?",
+            (userId,))
         for row in self.cursor:
             tex = self._get_texture(row[0])
             if tex.type == textureType:
@@ -133,8 +146,8 @@ class Database(object):
 
     def _get_metadata(self, textureId):
         """Gets all metadata for this texture"""
-        self.cursor.execute(
-            "SELECT * FROM Metadata WHERE TextureID=?", (textureId,))
+        self.cursor.execute("SELECT * FROM Metadata WHERE TextureID=?",
+                            (textureId,))
 
         for row in self.cursor:
             yield Metadata(self, row)
@@ -142,10 +155,24 @@ class Database(object):
     def _put_metadata(self, textureId, **kwargs):
         for k, v in kwargs.items():
             if k and v:
-                self.cursor.execute("""INSERT INTO Metadata
-                    (TextureId, 'Key', 'Value')
-                    VALUES (?, ?, ?)""", (textureId, k, v))
+                self.cursor.execute("""INSERT INTO Metadata(TextureId, 'Key', 'Value')
+                    VALUES(?, ?, ?)""", (textureId, k, v))
         return self._get_metadata(textureId)
+
+    def _get_access_token(self, uid):
+        self.cursor.execute("SELECT Token FROM AccessTokens WHERE UserId=?",
+                            (uid,))
+        t = self.cursor.fetchone()
+        return AccessToken(self, t) if t else None
+
+    def _put_access_token(self, uid, token, addr):
+        self._clear_access_token(uid)
+        self.cursor.execute("INSERT INTO AccessTokens VALUES (?, ?, ?)",
+                            (uid, token, addr))
+
+    def _clear_access_token(self, uid):
+        self.cursor.execute("DELETE FROM AccessTokens WHERE UserId=?",
+                            (uid,))
 
 
 class Row(object):
@@ -182,8 +209,14 @@ class User(Row):
     @property
     def textures(self): return self._db._get_textures(self._id)
 
+    @property
+    def access_token(self): return self._db._get_token(self._id)
+
     def put_texture(self, url, skinType, uploader):
         return self._db._put_texture(self._id, url, skinType, uploader)
+
+    def clear_access_token(self):
+        self._db._clear_token(self._id)
 
 
 class Texture(Row):
@@ -237,3 +270,26 @@ class Metadata(Row):
 
     @property
     def val(self): return self._row[self.VAL]
+
+
+class AccessToken(Row):
+
+    USER = 1
+    TOKEN = 2
+    ADDRESS = 3
+    EXPIRES = 4
+
+    @property
+    def _user(self): return self._row[self.USER]
+
+    @property
+    def user(self): return self._db._get_user(self._user)
+
+    @property
+    def token(self): return self._row[self.TOKEN]
+
+    @property
+    def address(self): return self._row[self.ADDRESS]
+
+    @property
+    def expires(self): return self._row[self.EXPIRES]

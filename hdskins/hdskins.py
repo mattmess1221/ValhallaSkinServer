@@ -4,9 +4,9 @@ import base64
 import functools
 import hashlib
 import os
-import re
+import random
 import time
-import tempfile
+import uuid as guid
 from io import BytesIO
 
 import requests
@@ -15,44 +15,57 @@ from expiringdict import ExpiringDict
 from flask import Flask, Response, abort, jsonify, request, render_template
 from PIL import Image
 
-from .validate import *
+from .validate import regex
 
 from.import database, mojang
 
-
-def env(key):
-    var = os.getenv(key)
-    if var is None:
-        raise KeyError(key + " not specified")
-    return var
-
-
 app = Flask(__name__)
 
-db_file = env('DB_FILE')
-root_dir = env('ROOT_DIR')
-root_url = env('ROOT_URL')
+db_file = os.getenv('DB_FILE', 'hdskins.db')
+root_dir = os.getenv('ROOT_DIR', os.getcwd())
+root_url = os.getenv('ROOT_URL', '127.0.0.1')
+offline_mode = bool(os.getenv('OFFLINE', False))
 
 supported_types = ["skin", "cape", "elytra"]
 
-client_keys = ExpiringDict(max_len=100, max_age_seconds=10)
+
+def open_database():
+    return database.Database(db_file)
 
 
 def authorize(func):
     @functools.wraps(func)
     def decorator(*args, **kwargs):
-        if 'name' not in request.form:
-            raise KeyError("Missing form: name")
-        if 'serverId' not in request.form:
-            raise KeyError("Missing form: serverId")
-        name = request.form['name']
-        server_id = request.form['serverId']
-        # Don't save this. It is useless once it is refreshed
-        if not mojang.validate(name, server_id, request.remote_addr):
-            return abort(401, jsonify(message="Not Authorized"))
+
+        if not offline_mode:
+            if 'Authorization' not in request.headers:
+                abort(403)
+            auth = str(request.headers['Authorization'])
+            print(auth)  # TODO: Remove this before publishing
+
+            with open_database() as db:
+                access = db.find_access_token(auth)
+                if access is None or access.address != request.remote_addr:
+                    abort(403)
+                if access.expires < time.time:
+                    abort(401)
+                if access.user.uuid != kwargs['uuid']:
+                    abort(401)
 
         return func(*args, **kwargs)
     return decorator
+
+
+def require_formdata(*formdata):
+    def callable(func):
+        @functools.wraps(func)
+        def decorator(*args, **kwargs):
+            for data in formdata:
+                if data not in request.form:
+                    raise KeyError("Missing required form: '%s'" % data)
+            return func(*args, **kwargs)
+        return decorator
+    return callable
 
 
 def metadata_json(data):
@@ -61,8 +74,7 @@ def metadata_json(data):
 
 
 def textures_json(textures):
-    print(type(textures))
-    for texType, tex in textures.items():
+    for texType, tex in textures:
         texType = str(texType).upper()
         dic = {'url': root_url + '/textures/' + tex.url}
         metadata = dict(metadata_json(tex.metadata))
@@ -72,34 +84,32 @@ def textures_json(textures):
 
 
 @app.route('/user/<user>')
-@regex(user=uuid)
+@regex(user=regex.UUID)
 def get_textures(user):
 
-    with database.Database(db_file) as db:
+    with open_database() as db:
         user = db.find_user(user, False)
         if not user:
             return abort(403, "User not found")
-        textures = dict(textures_json(dict(user.textures)))
-        print(textures)
+        textures = textures_json(user.textures)
         if not textures:
             return abort(403, "Skins not found")
         return jsonify(
             timestamp=int(time.time()),
             profileId=user.uniqueId,
             profileName=user.name,
-            textures=textures
+            textures=dict(textures)
         ), 200
 
 
 @app.route('/user/<user>/<skinType>', methods=['POST'])
-@regex(user=uuid, skin_type=choice(*supported_types))
+@regex(user=regex.UUID, skin_type=regex.choice(*supported_types))
+@require_formdata('file')
 @authorize
 def change_skin(user, skin_type):
-    if 'file' not in request.form:
-        raise ValueError('Missing required form: file')
 
-    model = request.form["model"]
-    url = request.form.get["file"]
+    model = request.form["model"] or 'default'
+    url = request.form["file"]
 
     resp = requests.get(url)
 
@@ -112,7 +122,7 @@ def change_skin(user, skin_type):
 
 
 @app.route('/user/<user>/<skin_type>', methods=['PUT'])
-@regex(user=uuid, skin_type=choice(*supported_types))
+@regex(user=regex.UUID, skin_type=regex.choice(*supported_types))
 @authorize
 def upload_skin(user, skin_type):
 
@@ -164,17 +174,17 @@ def gen_skin_hash(image_data):
 
 def put_texture(user, url, skin_type, uploader, **metadata):
 
-    with database.Database(db_file) as db:
+    with open_database() as db:
         user = db.find_user(user)
         texture = user.put_texture(url, skin_type, uploader)
         texture.put_metadata(**metadata)
 
 
 @app.route('/user/<user>/<skin_type>', methods=['DELETE'])
-@regex(user=uuid, skin_type=choice(*supported_types))
+@regex(user=regex.UUID, skin_type=regex.choice(*supported_types))
 @authorize
 def reset_skin(user, skin_type):
-    with database.Database(db_file) as db:
+    with open_database() as db:
         user = db.find_user(user)
         if user:
             tex = user.textures[skin_type]
@@ -184,31 +194,104 @@ def reset_skin(user, skin_type):
         return abort(404, "Unknown user")
 
 
-@app.route('/auth/request', methods=["POST"])
-def auth_request():
-    """Use this endpoint to request the server's public key.
+# Validate tokens are kept 100 at a time for 30 seconds each
+validate_tokens = ExpiringDict(100, 30)
+
+
+@app.route('/auth/handshake', methods=["POST"])
+@require_formdata('name')
+def auth_handshake():
+    """Use this endpoint to receive an authentication request.
 
     The public key is used by the client to join a server for verification.
-
-    TODO: is this really needed? Probably
     """
-    def get_form(key):
-        if key not in request.form:
-            raise KeyError("Missing value: " + key)
-        return request.form[key]
 
-    if 'name' not in request.form:
-        raise KeyError("Missing value: name")
-    if 'shared_key' not in request.form:
-        raise KeyError("Missing value: shared_key")
-    name = get_form("name")
-    ckey = base64.decodebytes(get_form("shared_key"))
+    if offline_mode:
+        return jsonify(offline=True)
 
-    client_keys[name] = rsa.PublicKey._load_pkcs1_der(ckey)
+    name = request.form['name']
+
+    # Generate a random 32 bit integer. It will be checked later.
+    verify_token = random.getrandbits(32)
+    validate_tokens[name] = verify_token, request.remote_addr
 
     return jsonify(
-        public_key=base64.encodebytes(pub_key._save_pkcs1_der())
+        offline=False,
+        serverId="",
+        publicKey=str(base64.b64encode(pub_key.save_pkcs1(format="DER"))),
+        verifyToken=verify_token
     )
+
+
+@app.route('/auth/response', methods=['POST'])
+@require_formdata('name', 'sharedSecret', 'verifyToken')
+def auth_response():
+
+    if offline_mode:
+        abort(501)  # Not Implemented
+
+    name = str(request.form['name'])
+    verify_token = int(request.form['verifyToken'])
+    shared_secret = bytes(request.form['sharedSecret'], encoding="UTF-8")
+    secret = base64.b64decode(shared_secret)
+
+    def forbidden(msg):
+        abort(403, jsonify(error="Forbidden", message=msg))
+
+    if name not in validate_tokens:
+        forbidden('The user has not requested a token or it has expired')
+
+    try:
+        token, addr = validate_tokens[name]
+
+        if token != verify_token:
+            forbidden('The verify token is not valid')
+        if addr != request.remote_addr:
+            forbidden('IP does not match')
+    finally:
+        del(validate_tokens[name])
+
+    server_id = hash_digest("", pub_key, secret)
+
+    response = mojang.has_joined(name, server_id, request.remote_addr)
+
+    if not response.ok:
+        abort(403)
+
+    json = response.json()
+
+    uuid = json.id
+    name = json.name
+
+    with open_database() as db:
+        user = db.find_user(uuid, name)
+
+        # Invalidate the previous access token
+        user.clear_access_token()
+
+        # Generate unique access token
+        token = base64.b64encode(guid.uuid4(), altchars="-_")
+        # No duplicates
+        while db.find_access_token(token) is not None:
+            token = base64.b64encode(guid.uuid4(), altchars="-_")
+        expires = user.put_access_token(token, request.remote_addr).expires
+
+        return jsonify(
+            accessToken=token,
+            userId=user.uniqueId,
+            expires=int(expires)
+        )
+
+
+def hash_digest(server_id, public_key, secret_key):
+    sha = hashlib.sha1()
+    sha.update(server_id.encode('utf-8'))
+    sha.update(secret_key)
+    sha.update(public_key)
+
+    intHash = int.from_bytes(sha.digest(), byteorder='big', signed=True)
+
+    return format(intHash, 'x')
 
 
 @app.before_first_request
@@ -216,18 +299,24 @@ def init_auth():
     global pub_key, priv_key
     (pub_key, priv_key) = rsa.newkeys(1024)
 
-    with database.Database(db_file) as db:
+    with open_database() as db:
         db.setup()
 
 
 @app.errorhandler(404)
 def notFound(status):
     # Redirect 404 to 403 for security
-    return render_template("403.html"), 403
+    abort(403)
+
+
+@app.errorhandler(405)
+def methodNotAllowed(status):
+    return jsonify(error="Method Not Allowed"), 405
 
 
 @app.errorhandler(ValueError)
+@app.errorhandler(KeyError)
 def valueError(error):
-    if app.config['DEBUG']:
-        raise error
+    # if app.config['DEBUG']:
+    #     raise error
     return jsonify(error=type(error).__name__, message=str(error)), 400
