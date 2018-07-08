@@ -44,7 +44,7 @@ class Database(object):
             UserId      INTEGER     NOT NULL, -- Users.ID
             Token       TEXT        NOT NULL,
             IPAddress   TEXT        NOT NULL,  -- user and token have 1 ip
-            Expires     DATETIME    NOT NULL DEFAULT dateadd('day', 1, CURRENT_TIMESTAMP)
+            Issued     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         """)
         self.connection.commit()
@@ -103,7 +103,6 @@ class Database(object):
 
         for (t_id,) in self.cursor:
             t = self._get_texture(t_id)
-            print(type(t))
             yield t.type, t
 
     def _get_texture(self, textureId):
@@ -167,7 +166,7 @@ class Database(object):
 
     def _put_access_token(self, uid, token, addr):
         self._clear_access_token(uid)
-        self.cursor.execute("INSERT INTO AccessTokens VALUES (?, ?, ?)",
+        self.cursor.execute("INSERT INTO AccessTokens (UserId, Token, IPAddress) VALUES (?, ?, ?)",
                             (uid, token, addr))
 
     def _clear_access_token(self, uid):
@@ -190,15 +189,15 @@ class Row(object):
 
 class User(Row):
 
-    NAME = 1
-    UUID = 2
+    UUID = 1
+    NAME = 2
     FETCHED = 3
 
     @property
-    def name(self): return self._row[self.NAME]
+    def uniqueId(self): return self._row[self.UUID]
 
     @property
-    def uniqueId(self): return self._row[self.UUID]
+    def name(self): return self._row[self.NAME]
 
     @property
     def time_fetched(self):
@@ -215,8 +214,11 @@ class User(Row):
     def put_texture(self, url, skinType, uploader):
         return self._db._put_texture(self._id, url, skinType, uploader)
 
+    def put_access_token(self, token, addr):
+        self._db._put_access_token(self._id, token, addr)
+
     def clear_access_token(self):
-        self._db._clear_token(self._id)
+        self._db._clear_access_token(self._id)
 
 
 class Texture(Row):
@@ -277,7 +279,7 @@ class AccessToken(Row):
     USER = 1
     TOKEN = 2
     ADDRESS = 3
-    EXPIRES = 4
+    ISSUED = 4
 
     @property
     def _user(self): return self._row[self.USER]
@@ -292,4 +294,7 @@ class AccessToken(Row):
     def address(self): return self._row[self.ADDRESS]
 
     @property
-    def expires(self): return self._row[self.EXPIRES]
+    def issued(self):
+        date = self._row[self.ISSUED]
+        self._db.cursor.execute("SELECT strftime('%s', ?)", (date,))
+        return self._db.cursor.fetchone()[0]
