@@ -5,6 +5,7 @@ import functools
 import hashlib
 import os
 import random
+import string
 import time
 import uuid as guid
 from io import BytesIO
@@ -12,12 +13,11 @@ from io import BytesIO
 import requests
 import rsa
 from expiringdict import ExpiringDict
-from flask import Flask, Response, abort, jsonify, request, render_template
+from flask import Flask, abort, jsonify, request,  send_from_directory
 from PIL import Image
 
+from . import database, mojang
 from .validate import regex
-
-from.import database, mojang
 
 app = Flask(__name__)
 
@@ -39,18 +39,17 @@ def authorize(func):
 
         if not offline_mode:
             if 'Authorization' not in request.headers:
-                abort(403)
+                return jsonify(message="Authorization token not provided"), 403
             auth = str(request.headers['Authorization'])
-            print(auth)  # TODO: Remove this before publishing
 
             with open_database() as db:
                 access = db.find_access_token(auth)
                 if access is None or access.address != request.remote_addr:
-                    abort(403)
-                if access.expires < time.time:
-                    abort(401)
-                if access.user.uuid != kwargs['uuid']:
-                    abort(401)
+                    return jsonify(message="Authorization failed"), 403
+                if int(access.issued) < time.time() - 24 * 60 * 60 * 100:
+                    return jsonify(message="Access token expired"), 401
+                if access.user.uniqueId != kwargs['user']:
+                    return jsonify(message="User is forbidden"), 401
 
         return func(*args, **kwargs)
     return decorator
@@ -89,17 +88,23 @@ def get_textures(user):
 
     with open_database() as db:
         user = db.find_user(user, False)
-        if not user:
-            return abort(403, "User not found")
+        if user is None:
+            return jsonify(message="User not found"), 403
         textures = textures_json(user.textures)
-        if not textures:
-            return abort(403, "Skins not found")
+        if textures is None:
+            return jsonify(message="Skins not found"), 403
         return jsonify(
-            timestamp=int(time.time()),
+            timestamp=int(time.time() * 1000),
             profileId=user.uniqueId,
             profileName=user.name,
             textures=dict(textures)
-        ), 200
+        )
+
+
+if bool(app.config['DEBUG']):
+    @app.route('/textures/<image>')
+    def get_image(image):
+        return send_from_directory(root_dir + '/textures', image, mimetype='image/png')
 
 
 @app.route('/user/<user>/<skinType>', methods=['POST'])
@@ -118,21 +123,20 @@ def change_skin(user, skin_type):
 
         put_texture(user, skin, skin_type, request.remote_addr, model=model)
 
-    return 'OK'
+    return jsonify(message='OK')
 
 
 @app.route('/user/<user>/<skin_type>', methods=['PUT'])
 @regex(user=regex.UUID, skin_type=regex.choice(*supported_types))
 @authorize
 def upload_skin(user, skin_type):
-
     if 'file' not in request.files:
         raise ValueError('Missing required file: file')
     file = request.files['file']
     if 'model' in request.form:
         model = request.form["model"]
     else:
-        model = None
+        model = 'default'
 
     if not file:
         raise ValueError("Empty file?")
@@ -145,7 +149,7 @@ def upload_skin(user, skin_type):
 
     put_texture(user, skin, skin_type, request.remote_addr, model=model)
 
-    return Response()
+    return jsonify(message="OK")
 
 
 def gen_skin_hash(image_data):
@@ -189,9 +193,9 @@ def reset_skin(user, skin_type):
         if user:
             tex = user.textures[skin_type]
             if tex and tex.clear():
-                return Response()
-            return abort(404, "Unknown texture")
-        return abort(404, "Unknown user")
+                return ""
+            return jsonify(message="Unknown texture"), 404
+        return jsonify(message="Unknown user"), 404
 
 
 # Validate tokens are kept 100 at a time for 30 seconds each
@@ -206,9 +210,6 @@ def auth_handshake():
     The public key is used by the client to join a server for verification.
     """
 
-    if offline_mode:
-        return jsonify(offline=True)
-
     name = request.form['name']
 
     # Generate a random 32 bit integer. It will be checked later.
@@ -216,15 +217,14 @@ def auth_handshake():
     validate_tokens[name] = verify_token, request.remote_addr
 
     return jsonify(
-        offline=False,
-        serverId="",
-        publicKey=str(base64.b64encode(pub_key.save_pkcs1(format="DER"))),
+        offline=offline_mode,
+        serverId=server_id,
         verifyToken=verify_token
     )
 
 
 @app.route('/auth/response', methods=['POST'])
-@require_formdata('name', 'sharedSecret', 'verifyToken')
+@require_formdata('name', 'verifyToken')
 def auth_response():
 
     if offline_mode:
@@ -232,8 +232,6 @@ def auth_response():
 
     name = str(request.form['name'])
     verify_token = int(request.form['verifyToken'])
-    shared_secret = bytes(request.form['sharedSecret'], encoding="UTF-8")
-    secret = base64.b64decode(shared_secret)
 
     def forbidden(msg):
         abort(403, jsonify(error="Forbidden", message=msg))
@@ -251,8 +249,6 @@ def auth_response():
     finally:
         del(validate_tokens[name])
 
-    server_id = hash_digest("", pub_key, secret)
-
     response = mojang.has_joined(name, server_id, request.remote_addr)
 
     if not response.ok:
@@ -260,8 +256,8 @@ def auth_response():
 
     json = response.json()
 
-    uuid = json.id
-    name = json.name
+    uuid = json['id']
+    name = json['name']
 
     with open_database() as db:
         user = db.find_user(uuid, name)
@@ -269,44 +265,36 @@ def auth_response():
         # Invalidate the previous access token
         user.clear_access_token()
 
-        # Generate unique access token
-        token = base64.b64encode(guid.uuid4(), altchars="-_")
-        # No duplicates
-        while db.find_access_token(token) is not None:
-            token = base64.b64encode(guid.uuid4(), altchars="-_")
-        expires = user.put_access_token(token, request.remote_addr).expires
+        # Generate unique access token. uuid1 guarentees it
+        token = str(base64.b64encode(
+            guid.uuid1().bytes, altchars=b"-_"), 'utf-8')
+
+        user.put_access_token(token, request.remote_addr)
 
         return jsonify(
             accessToken=token,
             userId=user.uniqueId,
-            expires=int(expires)
         )
-
-
-def hash_digest(server_id, public_key, secret_key):
-    sha = hashlib.sha1()
-    sha.update(server_id.encode('utf-8'))
-    sha.update(secret_key)
-    sha.update(public_key)
-
-    intHash = int.from_bytes(sha.digest(), byteorder='big', signed=True)
-
-    return format(intHash, 'x')
 
 
 @app.before_first_request
 def init_auth():
-    global pub_key, priv_key
-    (pub_key, priv_key) = rsa.newkeys(1024)
+
+    global server_id
+    server_id = random_string(20)
 
     with open_database() as db:
         db.setup()
 
 
+def random_string(size=20, chars=string.ascii_letters + string.digits):
+    return ''.join([random.choice(chars) for n in range(size)])
+
+
 @app.errorhandler(404)
 def notFound(status):
     # Redirect 404 to 403 for security
-    abort(403)
+    return jsonify(message="Forbidden"), 403
 
 
 @app.errorhandler(405)
@@ -317,6 +305,6 @@ def methodNotAllowed(status):
 @app.errorhandler(ValueError)
 @app.errorhandler(KeyError)
 def valueError(error):
-    # if app.config['DEBUG']:
-    #     raise error
-    return jsonify(error=type(error).__name__, message=str(error)), 400
+    if app.config['DEBUG']:
+        raise error
+    return jsonify(message=type(error).__name__ + ": " + str(error)), 400

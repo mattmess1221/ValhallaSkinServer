@@ -4,7 +4,7 @@ import functools
 import re
 
 
-class regex(**regs):
+class regex:
 
     UUID = r"^[0-9a-f]{32}$"
 
