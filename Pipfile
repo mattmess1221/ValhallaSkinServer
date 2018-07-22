@@ -5,13 +5,15 @@ verify_ssl = true
 
 [packages]
 flask = "*"
-rsa = "*"
 requests = "*"
 expiringdict = "*"
 pillow = "*"
+pydal = "*"
+python-dotenv = "*"
+"psycopg2" = "*"
 
 [requires]
-python_version = "3.5"
+python_version = "3.7"
 
 [dev-packages]
 "pep8" = "*"

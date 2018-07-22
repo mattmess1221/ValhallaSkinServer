@@ -1,19 +1,20 @@
 #!/usr/env python3
 
 import base64
+import calendar
+import datetime
 import functools
 import hashlib
 import os
 import random
 import string
-import time
-import uuid as guid
+from datetime import datetime, timedelta
 from io import BytesIO
+from uuid import uuid1
 
 import requests
-import rsa
 from expiringdict import ExpiringDict
-from flask import Flask, abort, jsonify, request,  send_from_directory
+from flask import Flask, abort, jsonify, request, send_from_directory
 from PIL import Image
 
 from . import database, mojang
@@ -21,7 +22,7 @@ from .validate import regex
 
 app = Flask(__name__)
 
-db_file = os.getenv('DB_FILE', 'hdskins.db')
+db_path = os.getenv('DB_PATH', 'sqlite://hdskins.sqlite')
 root_dir = os.getenv('ROOT_DIR', os.getcwd())
 root_url = os.getenv('ROOT_URL', '127.0.0.1')
 offline_mode = bool(os.getenv('OFFLINE', False))
@@ -30,7 +31,7 @@ supported_types = ["skin", "cape", "elytra"]
 
 
 def open_database():
-    return database.Database(db_file)
+    return database.Database(db_path)
 
 
 def authorize(func):
@@ -40,17 +41,22 @@ def authorize(func):
         if not offline_mode:
             if 'Authorization' not in request.headers:
                 return jsonify(message="Authorization token not provided"), 403
-            auth = str(request.headers['Authorization'])
+            token = str(request.headers['Authorization'])
 
-            with open_database() as db:
-                access = db.find_access_token(auth)
-                if access is None or access.address != request.remote_addr:
-                    return jsonify(message="Authorization failed"), 403
-                if int(access.issued) < time.time() - 24 * 60 * 60 * 100:
-                    return jsonify(message="Access token expired"), 401
-                if access.user.uniqueId != kwargs['user']:
-                    return jsonify(message="User is forbidden"), 401
+            db = open_database()
 
+            user = db.find_user(kwargs['user'])
+
+            if token is None or user is None:
+                return jsonify(message="Unauthorized"), 401
+            uploader = db.find_uploader(user, request.remote_addr)
+            access = db.find_token(uploader)
+            if access is None or access.token != token:
+                return jsonify(message="Authorization failed"), 403
+            if datetime.now() - access.issued > timedelta(hours=4):
+                return jsonify(message="Access token expired"), 401
+
+            uploader.accessed = datetime.now()
         return func(*args, **kwargs)
     return decorator
 
@@ -69,36 +75,39 @@ def require_formdata(*formdata):
 
 def metadata_json(data):
     for meta in data:
-        yield meta.key, meta.val
-
-
-def textures_json(textures):
-    for texType, tex in textures:
-        texType = str(texType).upper()
-        dic = {'url': root_url + '/textures/' + tex.url}
-        metadata = dict(metadata_json(tex.metadata))
-        if metadata:  # Only include metadata if there is any
-            dic['metadata'] = metadata
-        yield texType, dic
+        yield meta.key, meta.value
 
 
 @app.route('/user/<user>')
 @regex(user=regex.UUID)
 def get_textures(user):
 
-    with open_database() as db:
-        user = db.find_user(user, False)
-        if user is None:
-            return jsonify(message="User not found"), 403
-        textures = textures_json(user.textures)
+    db = open_database()
+    user = db.find_user(user)
+    if user is None:
+        return jsonify(message="User not found"), 403
+
+    def textures_json(textures):
         if textures is None:
-            return jsonify(message="Skins not found"), 403
-        return jsonify(
-            timestamp=int(time.time() * 1000),
-            profileId=user.uniqueId,
-            profileName=user.name,
-            textures=dict(textures)
-        )
+            return None
+        for tex_type, tex in textures.items():
+            typ = tex_type.upper()
+            upload = tex.file
+            dic = {'url': root_url + '/textures/' + upload.hash}
+            metadata = dict(metadata_json(tex.metadata))
+            if metadata:  # Only include metadata if there is any
+                dic['metadata'] = metadata
+            yield typ, dic
+
+    textures = textures_json(db.find_textures(user))
+    if textures is None:
+        return jsonify(message="Skins not found"), 403
+    return jsonify(
+        timestamp=calendar.timegm(datetime.utcnow().utctimetuple()),
+        profileId=user.uuid,
+        profileName=user.name,
+        textures=dict(textures)
+    )
 
 
 if bool(app.config['DEBUG']):
@@ -119,9 +128,8 @@ def change_skin(user, skin_type):
     resp = requests.get(url)
 
     if resp.ok:
-        skin = gen_skin_hash(resp.content)
-
-        put_texture(user, skin, skin_type, request.remote_addr, model=model)
+        put_texture(user, resp.content, skin_type,
+                    request.remote_addr, model=model)
 
     return jsonify(message='OK')
 
@@ -141,13 +149,9 @@ def upload_skin(user, skin_type):
     if not file:
         raise ValueError("Empty file?")
 
-    (image, skin) = gen_skin_hash(file.read())
-
-    image.save(os.path.join(root_dir, "textures", skin), format="PNG")
-
     # TODO: support for arbitrary metadata
 
-    put_texture(user, skin, skin_type, request.remote_addr, model=model)
+    put_texture(user, file.read(), skin_type, request.remote_addr, model=model)
 
     return jsonify(message="OK")
 
@@ -173,29 +177,59 @@ def gen_skin_hash(image_data):
         raise ValueError("Unsupported image size: " + image.size)
 
     # Create a hash of the image and use it as the filename.
-    return image, hashlib.sha1(image.tobytes()).hexdigest()
+    return hashlib.sha1(image.tobytes()).hexdigest()
 
 
-def put_texture(user, url, skin_type, uploader, **metadata):
+def put_texture(uuid, file, skin_type, uploader, **metadata):
 
-    with open_database() as db:
-        user = db.find_user(user)
-        texture = user.put_texture(url, skin_type, uploader)
-        texture.put_metadata(**metadata)
+    db = open_database()
+
+    def insert_meta():
+        for k, v in metadata.items():
+            yield db.db.metadata.update_or_insert(key=k, value=v)
+        db.commit()
+
+    user = db.find_user(uuid)
+    assert user is not None
+    uploader = db.find_uploader(user, request.remote_addr)
+    assert uploader is not None
+
+    skin_hash = gen_skin_hash(file)
+
+    upload = db.db(db.db.uploads.hash == skin_hash).select().first()
+
+    if upload is None:
+
+        if app.config['DEBUG']:
+            with open(root_dir + '/textures/' + skin_hash, 'wb') as f:
+                f.write(file)
+            file = None
+
+        upload = db.db.uploads.insert(hash=skin_hash,
+                                      file=file,
+                                      uploader=uploader)
+
+    db.db.textures.insert(user=user,
+                          tex_type=skin_type,
+                          file=upload,
+                          metadata=list(insert_meta()) or None)
+    db.commit()
 
 
 @app.route('/user/<user>/<skin_type>', methods=['DELETE'])
 @regex(user=regex.UUID, skin_type=regex.choice(*supported_types))
 @authorize
 def reset_skin(user, skin_type):
-    with open_database() as db:
-        user = db.find_user(user)
-        if user:
-            tex = user.textures[skin_type]
-            if tex and tex.clear():
-                return ""
-            return jsonify(message="Unknown texture"), 404
-        return jsonify(message="Unknown user"), 404
+    db = open_database()
+    user = db.find_user(user)
+    if user is not None:
+        db.db.textures.insert(user=user,
+                              tex_type=skin_type,
+                              file=None,
+                              metadata=None)
+        db.commit()
+        return jsonify(message="skin cleared")
+    return jsonify(message="Unknown user"), 404
 
 
 # Validate tokens are kept 100 at a time for 30 seconds each
@@ -247,7 +281,7 @@ def auth_response():
         if addr != request.remote_addr:
             forbidden('IP does not match')
     finally:
-        del(validate_tokens[name])
+        del (validate_tokens[name])
 
     response = mojang.has_joined(name, server_id, request.remote_addr)
 
@@ -259,42 +293,39 @@ def auth_response():
     uuid = json['id']
     name = json['name']
 
-    with open_database() as db:
-        user = db.find_user(uuid, name)
+    db = open_database()
+    user = db.find_user(uuid, name)
+    assert user it not None
 
-        # Invalidate the previous access token
-        user.clear_access_token()
+    uploader = db.find_uploader(user, addr)
+    assert uploader is not None
+    # Generate unique access token. uuid1 guarentees it
+    token = str(base64.b64encode(uuid1().bytes, altchars=b"-_"), 'utf-8')
 
-        # Generate unique access token. uuid1 guarentees it
-        token = str(base64.b64encode(
-            guid.uuid1().bytes, altchars=b"-_"), 'utf-8')
+    db.put_token(uploader, token)
 
-        user.put_access_token(token, request.remote_addr)
+    db.commit()
 
-        return jsonify(
-            accessToken=token,
-            userId=user.uniqueId,
-        )
+    return jsonify(
+        accessToken=token,
+        userId=user.uuid,
+    )
 
 
 @app.before_first_request
 def init_auth():
 
     global server_id
+
     server_id = random_string(20)
 
-    with open_database() as db:
-        db.setup()
+    db = open_database()
+    # db.setup()
+    db.commit()
 
 
 def random_string(size=20, chars=string.ascii_letters + string.digits):
     return ''.join([random.choice(chars) for n in range(size)])
-
-
-@app.errorhandler(404)
-def notFound(status):
-    # Redirect 404 to 403 for security
-    return jsonify(message="Forbidden"), 403
 
 
 @app.errorhandler(405)
@@ -302,8 +333,8 @@ def methodNotAllowed(status):
     return jsonify(error="Method Not Allowed"), 405
 
 
-@app.errorhandler(ValueError)
-@app.errorhandler(KeyError)
+# @app.errorhandler(ValueError)
+# @app.errorhandler(KeyError)
 def valueError(error):
     if app.config['DEBUG']:
         raise error

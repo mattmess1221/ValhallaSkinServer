@@ -2,3 +2,6 @@
 textures/
 .vscode/
 *.db
+*.sqlite
+.env
+*.table
