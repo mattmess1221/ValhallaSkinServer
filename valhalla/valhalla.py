@@ -295,7 +295,7 @@ def auth_response():
 
     db = open_database()
     user = db.find_user(uuid, name)
-    assert user it not None
+    assert user is not None
 
     uploader = db.find_uploader(user, addr)
     assert uploader is not None
