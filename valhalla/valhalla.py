@@ -22,7 +22,7 @@ from .validate import regex
 
 app = Flask(__name__)
 
-db_path = os.getenv('DB_PATH', 'sqlite://hdskins.sqlite')
+db_path = os.getenv('DATABASE_URL', 'sqlite://hdskins.sqlite')
 root_dir = os.getenv('ROOT_DIR', os.getcwd())
 root_url = os.getenv('ROOT_URL', '127.0.0.1')
 offline_mode = bool(os.getenv('OFFLINE', False))
