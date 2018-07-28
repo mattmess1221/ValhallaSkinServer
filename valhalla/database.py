@@ -5,6 +5,7 @@ import functools
 from datetime import datetime, timedelta
 
 from pydal import DAL, Field, SQLCustomType
+from gluon.contrib.heroku import get_db
 
 from .mojang import fetch_profile_name
 
@@ -14,7 +15,7 @@ class Database():
 
     def __init__(self, path):
 
-        self.db = db = DAL(path, lazy_tables=True)
+        self.db = db = get_db(name='DATABASE_URL')  # Migration doesn't work on heroku
 
         db.define_table(
             'users',

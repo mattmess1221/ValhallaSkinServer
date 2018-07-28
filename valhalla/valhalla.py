@@ -24,7 +24,7 @@ from .validate import regex
 app = Flask(__name__)
 
 db_path = os.getenv('DATABASE_URL', 'sqlite://hdskins.sqlite')
-textures_fs = os.getenv('TEXTURES_FS', 'file://./textures')
+textures_fs = os.getenv('TEXTURES_FS', 'file://.')
 root_url = os.getenv('ROOT_URL', '127.0.0.1')
 offline_mode = bool(os.getenv('OFFLINE', False))
 
@@ -41,7 +41,6 @@ if hasattr(upload_fs, 'upload_args'):
     }
     
     
-
 def open_database():
     return database.Database(db_path)
 
