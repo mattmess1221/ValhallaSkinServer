@@ -12,6 +12,7 @@ pydal = "*"
 "psycopg2" = "*"
 "fs-s3fs" = "*"
 python-dotenv = "*"
+gluon = "*"
 
 [requires]
 python_version = "3.7"
