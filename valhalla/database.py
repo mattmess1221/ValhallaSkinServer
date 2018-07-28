@@ -31,7 +31,6 @@ class Database():
         db.define_table(
             'uploads',
             Field('hash', 'string', notnull=True, unique=True),
-            Field('file', 'upload', uploadfolder='textures/', uploadfs='s3'),
             Field('uploader', 'reference uploaders', notnull=True),
             Field('upload_time', 'datetime', default=datetime.now, notnull=True))
 
@@ -81,8 +80,8 @@ class Database():
 
     def find_textures(self, user):
         return self.db(self.db.textures.user == user).select()\
-                .sort(lambda row: row.file.upload_time)\
-                .group_by_value('tex_type', one_result=True)
+            .sort(lambda row: row.file.upload_time)\
+            .group_by_value('tex_type', one_result=True)
 
     def find_uploader(self, user, addr):
         self.db.uploaders.update_or_insert(user=user, address=addr)
@@ -99,4 +98,4 @@ class Database():
                                         issued=datetime.now())
 
     def clear_token(self, uploader):
-        self.db(self.db.tokens.uploader == user).delete()
+        self.db(self.db.tokens.uploader == uploader).delete()

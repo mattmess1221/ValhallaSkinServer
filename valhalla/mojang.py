@@ -7,15 +7,15 @@ _VALIDATE = "https://sessionserver.mojang.com/session/minecraft/hasJoined"
 _PROFILE = "https://sessionserver.mojang.com/session/minecraft/profile/"
 
 
-def has_joined(name, serverHash, addr):
+def has_joined(name, server_hash, address):
     """Validates a login against Mojang's servers
 
     http://wiki.vg/Protocol_Encryption#Authentication
     """
     return requests.get(_VALIDATE, params={
         "username": name,
-        "serverId": serverHash,
-        "ip": addr
+        "serverId": server_hash,
+        "ip": address
     })  # 204 means success, but 403 means fail
 
 

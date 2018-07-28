@@ -9,8 +9,9 @@ requests = "*"
 expiringdict = "*"
 pillow = "*"
 pydal = "*"
-python-dotenv = "*"
 "psycopg2" = "*"
+"fs-s3fs" = "*"
+python-dotenv = "*"
 
 [requires]
 python_version = "3.7"

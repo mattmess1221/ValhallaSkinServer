@@ -14,7 +14,8 @@ from uuid import uuid1
 
 import requests
 from expiringdict import ExpiringDict
-from flask import Flask, abort, jsonify, request, send_from_directory
+from flask import Flask, abort, jsonify, request, send_file
+from fs import open_fs
 from PIL import Image
 
 from . import database, mojang
@@ -23,12 +24,23 @@ from .validate import regex
 app = Flask(__name__)
 
 db_path = os.getenv('DATABASE_URL', 'sqlite://hdskins.sqlite')
-root_dir = os.getenv('ROOT_DIR', os.getcwd())
+textures_fs = os.getenv('TEXTURES_FS', 'file://./textures')
 root_url = os.getenv('ROOT_URL', '127.0.0.1')
 offline_mode = bool(os.getenv('OFFLINE', False))
 
 supported_types = ["skin", "cape", "elytra"]
 
+
+upload_fs = open_fs(textures_fs, cwd='textures', writeable=True)
+
+# Customize the FS upload args if they exist. Mostly for S3
+if hasattr(upload_fs, 'upload_args'):
+    upload_fs.upload_args = {
+        'ContentType': 'image/png',
+        'ACL': 'public-read'  # S3: Make public
+    }
+    
+    
 
 def open_database():
     return database.Database(db_path)
@@ -113,7 +125,11 @@ def get_textures(user):
 if bool(app.config['DEBUG']):
     @app.route('/textures/<image>')
     def get_image(image):
-        return send_from_directory(root_dir + '/textures', image, mimetype='image/png')
+        "Debug endpoint used to fetch skins. Production should use a separate server such as S3"
+        if upload_fs.exists(image):
+            return send_file(upload_fs.open(image, 'rb'), mimetype='image/png')
+        else:
+            abort(404)
 
 
 @app.route('/user/<user>/<skinType>', methods=['POST'])
@@ -199,15 +215,11 @@ def put_texture(uuid, file, skin_type, uploader, **metadata):
     upload = db.db(db.db.uploads.hash == skin_hash).select().first()
 
     if upload is None:
+        
+        with upload_fs.open(skin_hash, "wb") as f:
+            f.write(file)
 
-        if app.config['DEBUG']:
-            with open(root_dir + '/textures/' + skin_hash, 'wb') as f:
-                f.write(file)
-            file = None
-
-        upload = db.db.uploads.insert(hash=skin_hash,
-                                      file=file,
-                                      uploader=uploader)
+        upload = db.db.uploads.insert(hash=skin_hash, uploader=uploader)
 
     db.db.textures.insert(user=user,
                           tex_type=skin_type,
