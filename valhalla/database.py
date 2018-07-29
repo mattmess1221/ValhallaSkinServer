@@ -14,7 +14,8 @@ class Database():
     """An instance of a sql database"""
 
     def __init__(self, path):
-        self.db = db = DAL(path, migrate=False)  # Migration doesn't work on heroku
+        # Migration doesn't work on heroku
+        self.db = db = DAL(path, lazy_tables=True, migrate=False)
 
         db.define_table(
             'users',
@@ -39,7 +40,8 @@ class Database():
             Field('user', 'reference users', notnull=True),
             Field('tex_type', 'string', notnull=True),
             Field('file', 'reference uploads'),
-            Field('metadata', 'list:reference metadata'))
+            Field('metadata', 'list:reference metadata'),
+            Field('time', 'datetime', default=datetime.now, notnull=True))
 
         db.define_table(
             'metadata',
@@ -80,7 +82,7 @@ class Database():
 
     def find_textures(self, user):
         return self.db(self.db.textures.user == user).select()\
-            .sort(lambda row: row.file.upload_time)\
+            .sort(lambda row: row.time)\
             .group_by_value('tex_type', one_result=True)
 
     def find_uploader(self, user, addr):
