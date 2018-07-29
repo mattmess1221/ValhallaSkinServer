@@ -1,0 +1,3 @@
+# Hello Sweetie Bot. Please leave.
+User-agent: *
+Disallow: /

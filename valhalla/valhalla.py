@@ -135,6 +135,11 @@ if bool(app.config['DEBUG']):
             abort(404)
 
 
+@app.route('/robots.txt')
+def robots():
+    return send_file('../robots.txt')
+
+
 def get_metadata_map(form):
     for k, v in form.items():
         if k != 'file':
