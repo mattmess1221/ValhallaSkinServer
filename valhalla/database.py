@@ -5,7 +5,6 @@ import functools
 from datetime import datetime, timedelta
 
 from pydal import DAL, Field
-import pydal
 
 from .mojang import fetch_profile_name
 
@@ -15,7 +14,7 @@ class Database():
 
     def __init__(self, path):
         # Migration doesn't work on heroku
-        self.db = db = DAL(path, lazy_tables=True, folder='tables')
+        self.db = db = DAL(path, lazy_tables=True, table_hash="db_hash_hdskins")
 
         db.define_table(
             'users',
