@@ -56,6 +56,12 @@ class Database():
 
         db.commit()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.db.close()
+
     def commit(self):
         self.db.commit()
 

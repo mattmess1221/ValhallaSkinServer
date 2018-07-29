@@ -53,20 +53,23 @@ def authorize(func):
                 return jsonify(message="Authorization token not provided"), 403
             token = str(request.headers['Authorization'])
 
-            db = open_database()
+            with open_database() as db:
 
-            user = db.find_user(kwargs['user'])
+                user = db.find_user(kwargs['user'])
 
-            if token is None or user is None:
-                return jsonify(message="Unauthorized"), 401
-            uploader = db.find_uploader(user, request.remote_addr)
-            access = db.find_token(uploader)
-            if access is None or access.token != token:
-                return jsonify(message="Authorization failed"), 403
-            if datetime.now() - access.issued > timedelta(hours=4):
-                return jsonify(message="Access token expired"), 401
+                if token is None or user is None:
+                    return jsonify(message="Unauthorized"), 401
+                uploader = db.find_uploader(user, request.remote_addr)
+                access = db.find_token(uploader)
+                if access is None or access.token != token:
+                    return jsonify(message="Authorization failed"), 403
+                if datetime.now() - access.issued > timedelta(hours=4):
+                    return jsonify(message="Access token expired"), 401
 
-            uploader.accessed = datetime.now()
+                uploader.accessed = datetime.now()
+
+                db.commit()
+
         return func(*args, **kwargs)
     return decorator
 
@@ -91,38 +94,38 @@ def require_formdata(*formdata):
 @regex(user=regex.UUID)
 def get_textures(user):
 
-    db = open_database()
-    user = db.find_user(user)
-    if user is None:
-        return jsonify(message="User not found"), 403
+    with open_database() as db:
+        user = db.find_user(user)
+        if user is None:
+            return jsonify(message="User not found"), 403
 
-    def metadata_json(data):
-        for meta in data:
-            yield meta.key, meta.value
+        def metadata_json(data):
+            for meta in data:
+                yield meta.key, meta.value
 
-    def textures_json(textures):
+        def textures_json(textures):
+            if not textures:
+                return None
+            for tex_type, tex in textures.items():
+                typ = tex_type.upper()
+                upload = tex.file
+                if upload is None:
+                    continue
+                dic = {'url': root_url + '/textures/' + upload.hash}
+                metadata = dict(metadata_json(tex.metadata))
+                if metadata:  # Only include metadata if there is any
+                    dic['metadata'] = metadata
+                yield typ, dic
+
+        textures = dict(textures_json(db.find_textures(user)))
         if not textures:
-            return None
-        for tex_type, tex in textures.items():
-            typ = tex_type.upper()
-            upload = tex.file
-            if upload is None:
-                continue
-            dic = {'url': root_url + '/textures/' + upload.hash}
-            metadata = dict(metadata_json(tex.metadata))
-            if metadata:  # Only include metadata if there is any
-                dic['metadata'] = metadata
-            yield typ, dic
-
-    textures = dict(textures_json(db.find_textures(user)))
-    if not textures:
-        return jsonify(message="Skins not found"), 403
-    return jsonify(
-        timestamp=calendar.timegm(datetime.utcnow().utctimetuple()),
-        profileId=user.uuid,
-        profileName=user.name,
-        textures=dict(textures)
-    )
+            return jsonify(message="Skins not found"), 403
+        return jsonify(
+            timestamp=calendar.timegm(datetime.utcnow().utctimetuple()),
+            profileId=user.uuid,
+            profileName=user.name,
+            textures=dict(textures)
+        )
 
 
 if bool(app.config['DEBUG']):
@@ -206,52 +209,52 @@ def gen_skin_hash(image_data):
 
 def put_texture(uuid, file, skin_type, uploader, **metadata):
 
-    db = open_database()
+    with open_database() as db:
 
-    def insert_meta():
-        for k, v in metadata.items():
-            md = db.db((db.db.metadata.key == k) and (db.db.metadata.value == v)).select().first()
-            if md is None:
-                md = db.db.metadata.insert(key=k, value=v)
-            yield md.id
+        def insert_meta():
+            for k, v in metadata.items():
+                md = db.db((db.db.metadata.key == k) and (db.db.metadata.value == v)).select().first()
+                if md is None:
+                    md = db.db.metadata.insert(key=k, value=v)
+                yield md.id
 
-    user = db.find_user(uuid)
-    assert user is not None
-    uploader = db.find_uploader(user, request.remote_addr)
-    assert uploader is not None
+        user = db.find_user(uuid)
+        assert user is not None
+        uploader = db.find_uploader(user, request.remote_addr)
+        assert uploader is not None
 
-    skin_hash = gen_skin_hash(file)
+        skin_hash = gen_skin_hash(file)
 
-    upload = db.db(db.db.uploads.hash == skin_hash).select().first()
+        upload = db.db(db.db.uploads.hash == skin_hash).select().first()
 
-    if upload is None:
-        
-        with upload_fs.open(skin_hash, "wb") as f:
-            f.write(file)
+        if upload is None:
+            
+            with upload_fs.open(skin_hash, "wb") as f:
+                f.write(file)
 
-        upload = db.db.uploads.insert(hash=skin_hash, uploader=uploader)
+            upload = db.db.uploads.insert(hash=skin_hash, uploader=uploader)
 
-    db.db.textures.insert(user=user,
-                          tex_type=skin_type,
-                          file=upload,
-                          metadata=list(insert_meta()) or None)
-    db.commit()
+        db.db.textures.insert(user=user,
+                            tex_type=skin_type,
+                            file=upload,
+                            metadata=list(insert_meta()) or None)
+        db.commit()
 
 
 @app.route('/user/<user>/<skin_type>', methods=['DELETE'])
 @regex(user=regex.UUID, skin_type=regex.choice(*supported_types))
 @authorize
 def reset_skin(user, skin_type):
-    db = open_database()
-    user = db.find_user(user)
-    if user is not None:
-        db.db.textures.insert(user=user,
-                              tex_type=skin_type,
-                              file=None,
-                              metadata=None)
-        db.commit()
-        return jsonify(message="skin cleared")
-    return jsonify(message="Unknown user"), 404
+    with open_database() as db:
+        user = db.find_user(user)
+        if user is not None:
+            db.db.textures.insert(user=user,
+                                tex_type=skin_type,
+                                file=None,
+                                metadata=None)
+            db.commit()
+            return jsonify(message="skin cleared")
+        return jsonify(message="Unknown user"), 404
 
 
 # Validate tokens are kept 100 at a time for 30 seconds each
@@ -315,23 +318,23 @@ def auth_response():
     uuid = json['id']
     name = json['name']
 
-    db = open_database()
-    user = db.find_user(uuid, name)
-    assert user is not None
+    with open_database() as db:
+        user = db.find_user(uuid, name)
+        assert user is not None
 
-    uploader = db.find_uploader(user, addr)
-    assert uploader is not None
-    # Generate unique access token. uuid1 guarentees it
-    token = str(base64.b64encode(uuid1().bytes, altchars=b"-_"), 'utf-8')
+        uploader = db.find_uploader(user, addr)
+        assert uploader is not None
+        # Generate unique access token. uuid1 guarentees it
+        token = str(base64.b64encode(uuid1().bytes, altchars=b"-_"), 'utf-8')
 
-    db.put_token(uploader, token)
+        db.put_token(uploader, token)
 
-    db.commit()
+        db.commit()
 
-    return jsonify(
-        accessToken=token,
-        userId=user.uuid,
-    )
+        return jsonify(
+            accessToken=token,
+            userId=user.uuid,
+        )
 
 
 @app.before_first_request
@@ -341,9 +344,8 @@ def init_auth():
 
     server_id = random_string(20)
 
-    db = open_database()
-    # db.setup()
-    db.commit()
+    with open_database() as db:
+        db.commit()
 
 
 def random_string(size=20, chars=string.ascii_letters + string.digits):
