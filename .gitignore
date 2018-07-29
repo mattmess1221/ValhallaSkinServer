@@ -4,5 +4,3 @@ textures/
 *.db
 *.sqlite
 .env
-*.table
-*.log
