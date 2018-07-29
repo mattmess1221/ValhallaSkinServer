@@ -14,7 +14,7 @@ class Database():
 
     def __init__(self, path):
         # Migration doesn't work on heroku
-        self.db = db = DAL(path, lazy_tables=True, migrate=False)
+        self.db = db = DAL(path, lazy_tables=True, migrate=False, pool_size=20)
 
         db.define_table(
             'users',
