@@ -71,21 +71,20 @@ def authorize(func):
     return decorator
 
 
+class BadRequest(Exception):
+    pass
+
+
 def require_formdata(*formdata):
     def callable(func):
         @functools.wraps(func)
         def decorator(*args, **kwargs):
             for data in formdata:
                 if data not in request.form:
-                    raise KeyError("Missing required form: '%s'" % data)
+                    raise BadRequest("Missing required form: '%s'" % data)
             return func(*args, **kwargs)
         return decorator
     return callable
-
-
-def metadata_json(data):
-    for meta in data:
-        yield meta.key, meta.value
 
 
 @app.route('/user/<user>')
@@ -97,20 +96,26 @@ def get_textures(user):
     if user is None:
         return jsonify(message="User not found"), 403
 
+    def metadata_json(data):
+        for meta in data:
+            yield meta.key, meta.value
+
     def textures_json(textures):
-        if textures is None:
+        if not textures:
             return None
         for tex_type, tex in textures.items():
             typ = tex_type.upper()
             upload = tex.file
+            if upload is None:
+                continue
             dic = {'url': root_url + '/textures/' + upload.hash}
             metadata = dict(metadata_json(tex.metadata))
             if metadata:  # Only include metadata if there is any
                 dic['metadata'] = metadata
             yield typ, dic
 
-    textures = textures_json(db.find_textures(user))
-    if textures is None:
+    textures = dict(textures_json(db.find_textures(user)))
+    if not textures:
         return jsonify(message="Skins not found"), 403
     return jsonify(
         timestamp=calendar.timegm(datetime.utcnow().utctimetuple()),
@@ -130,20 +135,25 @@ if bool(app.config['DEBUG']):
             abort(404)
 
 
+def get_metadata_map(form):
+    for k, v in form.items():
+        if k != 'file':
+            yield k, v
+    
+
 @app.route('/user/<user>/<skinType>', methods=['POST'])
 @regex(user=regex.UUID, skin_type=regex.choice(*supported_types))
 @require_formdata('file')
 @authorize
 def change_skin(user, skin_type):
 
-    model = request.form["model"] or 'default'
     url = request.form["file"]
-
     resp = requests.get(url)
+    if not resp.ok:
+        raise BadRequest("File url not found.")
 
-    if resp.ok:
-        put_texture(user, resp.content, skin_type,
-                    request.remote_addr, model=model)
+    metadata = get_metadata_map(request.form)
+    put_texture(user, resp.content, skin_type, request.remote_addr, **dict(metadata))
 
     return jsonify(message='OK')
 
@@ -153,19 +163,14 @@ def change_skin(user, skin_type):
 @authorize
 def upload_skin(user, skin_type):
     if 'file' not in request.files:
-        raise ValueError('Missing required file: file')
+        raise BadRequest('Missing required file: file')
     file = request.files['file']
-    if 'model' in request.form:
-        model = request.form["model"]
-    else:
-        model = 'default'
-
+    
     if not file:
-        raise ValueError("Empty file?")
+        raise BadRequest("Empty file?")
 
-    # TODO: support for arbitrary metadata
-
-    put_texture(user, file.read(), skin_type, request.remote_addr, model=model)
+    metadata = get_metadata_map(request.form)
+    put_texture(user, file.read(), skin_type, request.remote_addr, **dict(metadata))
 
     return jsonify(message="OK")
 
@@ -200,8 +205,10 @@ def put_texture(uuid, file, skin_type, uploader, **metadata):
 
     def insert_meta():
         for k, v in metadata.items():
-            yield db.db.metadata.update_or_insert(key=k, value=v)
-        db.commit()
+            md = db.db((db.db.metadata.key == k) and (db.db.metadata.value == v)).select().first()
+            if md is None:
+                md = db.db.metadata.insert(key=k, value=v)
+            yield md.id
 
     user = db.find_user(uuid)
     assert user is not None
@@ -343,9 +350,6 @@ def methodNotAllowed(status):
     return jsonify(error="Method Not Allowed"), 405
 
 
-# @app.errorhandler(ValueError)
-# @app.errorhandler(KeyError)
-def valueError(error):
-    if app.config['DEBUG']:
-        raise error
+@app.errorhandler(BadRequest)
+def raiseUserError(error):
     return jsonify(message=type(error).__name__ + ": " + str(error)), 400
