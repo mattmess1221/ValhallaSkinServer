@@ -4,3 +4,4 @@ textures/
 *.db
 *.sqlite
 .env
+.idea/

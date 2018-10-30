@@ -29,7 +29,6 @@ offline_mode = bool(os.getenv('OFFLINE', False))
 
 supported_types = ["skin", "cape", "elytra"]
 
-
 upload_fs = open_fs(textures_fs, cwd='textures', writeable=True)
 
 # Customize the FS upload args if they exist. Mostly for S3
@@ -38,8 +37,8 @@ if hasattr(upload_fs, 'upload_args'):
         'ContentType': 'image/png',
         'ACL': 'public-read'  # S3: Make public
     }
-    
-    
+
+
 def open_database():
     return database.Database(db_path)
 
@@ -71,6 +70,7 @@ def authorize(func):
                 db.commit()
 
         return func(*args, **kwargs)
+
     return decorator
 
 
@@ -79,21 +79,22 @@ class BadRequest(Exception):
 
 
 def require_formdata(*formdata):
-    def callable(func):
+    def call(func):
         @functools.wraps(func)
         def decorator(*args, **kwargs):
             for data in formdata:
                 if data not in request.form:
                     raise BadRequest("Missing required form: '%s'" % data)
             return func(*args, **kwargs)
+
         return decorator
-    return callable
+
+    return call
 
 
 @app.route('/user/<user>')
 @regex(user=regex.UUID)
 def get_textures(user):
-
     with open_database() as db:
         user = db.find_user(user)
         if user is None:
@@ -131,7 +132,7 @@ def get_textures(user):
 if bool(app.config['DEBUG']):
     @app.route('/textures/<image>')
     def get_image(image):
-        "Debug endpoint used to fetch skins. Production should use a separate server such as S3"
+        """Debug endpoint used to fetch skins. Production should use a separate server such as S3"""
         if upload_fs.exists(image):
             return send_file(upload_fs.open(image, 'rb'), mimetype='image/png')
         else:
@@ -147,21 +148,20 @@ def get_metadata_map(form):
     for k, v in form.items():
         if k != 'file':
             yield k, v
-    
+
 
 @app.route('/user/<user>/<skinType>', methods=['POST'])
 @regex(user=regex.UUID, skin_type=regex.choice(*supported_types))
 @require_formdata('file')
 @authorize
 def change_skin(user, skin_type):
-
     url = request.form["file"]
     resp = requests.get(url)
     if not resp.ok:
         raise BadRequest("File url not found.")
 
     metadata = get_metadata_map(request.form)
-    put_texture(user, resp.content, skin_type, request.remote_addr, **dict(metadata))
+    put_texture(user, resp.content, skin_type, **dict(metadata))
 
     return jsonify(message='OK')
 
@@ -173,18 +173,17 @@ def upload_skin(user, skin_type):
     if 'file' not in request.files:
         raise BadRequest('Missing required file: file')
     file = request.files['file']
-    
+
     if not file:
         raise BadRequest("Empty file?")
 
     metadata = get_metadata_map(request.form)
-    put_texture(user, file.read(), skin_type, request.remote_addr, **dict(metadata))
+    put_texture(user, file.read(), skin_type, **dict(metadata))
 
     return jsonify(message="OK")
 
 
 def gen_skin_hash(image_data):
-
     image = Image.open(BytesIO(image_data))
 
     if image.format != "PNG":
@@ -196,7 +195,7 @@ def gen_skin_hash(image_data):
     # 64, 128, 256, 512, 1024
 
     # set of supported width sizes. Height is either same or half
-    sizes = set([64, 128, 256, 512, 1024])
+    sizes = {64, 128, 256, 512, 1024}
     (width, height) = image.size
     valid = width / 2 == height or width == height
 
@@ -207,8 +206,7 @@ def gen_skin_hash(image_data):
     return hashlib.sha1(image.tobytes()).hexdigest()
 
 
-def put_texture(uuid, file, skin_type, uploader, **metadata):
-
+def put_texture(uuid, file, skin_type, **metadata):
     with open_database() as db:
 
         def insert_meta():
@@ -228,16 +226,15 @@ def put_texture(uuid, file, skin_type, uploader, **metadata):
         upload = db.db(db.db.uploads.hash == skin_hash).select().first()
 
         if upload is None:
-            
             with upload_fs.open(skin_hash, "wb") as f:
                 f.write(file)
 
             upload = db.db.uploads.insert(hash=skin_hash, uploader=uploader)
 
         db.db.textures.insert(user=user,
-                            tex_type=skin_type,
-                            file=upload,
-                            metadata=list(insert_meta()) or None)
+                              tex_type=skin_type,
+                              file=upload,
+                              metadata=list(insert_meta()) or None)
         db.commit()
 
 
@@ -249,9 +246,9 @@ def reset_skin(user, skin_type):
         user = db.find_user(user)
         if user is not None:
             db.db.textures.insert(user=user,
-                                tex_type=skin_type,
-                                file=None,
-                                metadata=None)
+                                  tex_type=skin_type,
+                                  file=None,
+                                  metadata=None)
             db.commit()
             return jsonify(message="skin cleared")
         return jsonify(message="Unknown user"), 404
@@ -285,7 +282,6 @@ def auth_handshake():
 @app.route('/auth/response', methods=['POST'])
 @require_formdata('name', 'verifyToken')
 def auth_response():
-
     if offline_mode:
         abort(501)  # Not Implemented
 
@@ -339,7 +335,6 @@ def auth_response():
 
 @app.before_first_request
 def init_auth():
-
     global server_id
 
     server_id = random_string(20)

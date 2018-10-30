@@ -5,7 +5,6 @@ import re
 
 
 class regex:
-
     UUID = r"^[0-9a-f]{32}$"
 
     @staticmethod
@@ -24,4 +23,5 @@ class regex:
                 if not reg.match(kwargs[k]):
                     raise ValueError("Invalid Input: " + kwargs[k])
             return func(*args, **kwargs)
+
         return decorator

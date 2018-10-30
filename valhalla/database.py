@@ -86,8 +86,8 @@ class Database():
         return user
 
     def find_textures(self, user):
-        return self.db(self.db.textures.user == user).select()\
-            .sort(lambda row: row.time)\
+        return self.db(self.db.textures.user == user).select() \
+            .sort(lambda row: row.time) \
             .group_by_value('tex_type', one_result=True)
 
     def find_uploader(self, user, addr):
