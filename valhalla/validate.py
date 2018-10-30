@@ -7,11 +7,6 @@ import re
 class regex:
     UUID = r"^[0-9a-f]{32}$"
 
-    @staticmethod
-    def choice(*args):
-        choices = '|'.join(args)
-        return r"^(?:" + choices + ")$"
-
     def __init__(self, **regs):
         self.regs = regs
 
@@ -25,3 +20,7 @@ class regex:
             return func(*args, **kwargs)
 
         return decorator
+
+
+def noneof(*args):
+    return r"^(?!^(?:%s)$).+$" % '|'.join(args)

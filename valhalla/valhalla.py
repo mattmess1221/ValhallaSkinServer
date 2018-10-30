@@ -18,7 +18,7 @@ from fs import open_fs
 from PIL import Image
 
 from . import database, mojang
-from .validate import regex
+from .validate import regex, noneof
 
 app = Flask(__name__)
 
@@ -27,7 +27,7 @@ textures_fs = os.getenv('TEXTURES_FS', 'file://.')
 root_url = os.getenv('ROOT_URL', 'http://127.0.0.1')
 offline_mode = bool(os.getenv('OFFLINE', False))
 
-supported_types = ["skin", "cape", "elytra"]
+blacklist = ["cape"]
 
 upload_fs = open_fs(textures_fs, cwd='textures', writeable=True)
 
@@ -151,7 +151,7 @@ def get_metadata_map(form):
 
 
 @app.route('/user/<user>/<skinType>', methods=['POST'])
-@regex(user=regex.UUID, skin_type=regex.choice(*supported_types))
+@regex(user=regex.UUID, skin_type=noneof(*blacklist))
 @require_formdata('file')
 @authorize
 def change_skin(user, skin_type):
@@ -167,7 +167,7 @@ def change_skin(user, skin_type):
 
 
 @app.route('/user/<user>/<skin_type>', methods=['PUT'])
-@regex(user=regex.UUID, skin_type=regex.choice(*supported_types))
+@regex(user=regex.UUID, skin_type=noneof(*blacklist))
 @authorize
 def upload_skin(user, skin_type):
     if 'file' not in request.files:
@@ -239,7 +239,7 @@ def put_texture(uuid, file, skin_type, **metadata):
 
 
 @app.route('/user/<user>/<skin_type>', methods=['DELETE'])
-@regex(user=regex.UUID, skin_type=regex.choice(*supported_types))
+@regex(user=regex.UUID, skin_type=noneof(*blacklist))
 @authorize
 def reset_skin(user, skin_type):
     with open_database() as db:
