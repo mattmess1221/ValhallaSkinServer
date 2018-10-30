@@ -24,7 +24,7 @@ app = Flask(__name__)
 
 db_path = os.getenv('DATABASE_URL', 'sqlite://hdskins.sqlite')
 textures_fs = os.getenv('TEXTURES_FS', 'file://.')
-root_url = os.getenv('ROOT_URL', '127.0.0.1')
+root_url = os.getenv('ROOT_URL', 'http://127.0.0.1')
 offline_mode = bool(os.getenv('OFFLINE', False))
 
 supported_types = ["skin", "cape", "elytra"]
