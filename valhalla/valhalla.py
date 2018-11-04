@@ -95,10 +95,6 @@ def require_formdata(*formdata):
 @app.route('/user/<user>')
 @regex(user=regex.UUID)
 def get_textures(user):
-
-    from pprint import pprint
-    pprint(request.environ)
-
     with open_database() as db:
         user = db.find_user(user)
         if user is None:
