@@ -98,7 +98,7 @@ def get_textures(user):
     with open_database() as db:
         user = db.find_user(user)
         if user is None:
-            return jsonify(message="User not found"), 403
+            return jsonify(message="User not found"), 404
 
         def metadata_json(data):
             for meta in data:
@@ -120,7 +120,7 @@ def get_textures(user):
 
         textures = dict(textures_json(db.find_textures(user)))
         if not textures:
-            return jsonify(message="Skins not found"), 403
+            return jsonify(message="Skins not found"), 404
         return jsonify(
             timestamp=calendar.timegm(datetime.utcnow().utctimetuple()),
             profileId=user.uuid,
