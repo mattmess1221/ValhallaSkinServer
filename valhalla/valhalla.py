@@ -1,4 +1,4 @@
-#!/usr/env python3
+#!/usr/bin/env python3
 
 import base64
 import calendar
@@ -30,13 +30,6 @@ offline_mode = bool(os.getenv('OFFLINE', False))
 blacklist = ["cape"]
 
 upload_fs = open_fs(textures_fs, cwd='textures', writeable=True)
-
-# Customize the FS upload args if they exist. Mostly for S3
-if hasattr(upload_fs, 'upload_args'):
-    upload_fs.upload_args = {
-        'ContentType': 'image/png',
-        'ACL': 'public-read'  # S3: Make public
-    }
 
 
 def open_database():
