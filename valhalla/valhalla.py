@@ -4,6 +4,7 @@ import base64
 import calendar
 import functools
 import hashlib
+import logging
 import os
 import random
 import string
@@ -12,10 +13,10 @@ from io import BytesIO
 from uuid import uuid1
 
 import requests
+from PIL import Image
 from expiringdict import ExpiringDict
 from flask import Flask, abort, jsonify, request, send_file
 from fs import open_fs
-from PIL import Image
 
 from . import database, mojang
 from .validate import regex, noneof
@@ -353,7 +354,7 @@ def method_not_allowed(status):
 
 
 def format_exc(exc):
-    return "%s: %s".format(type(exc).__name__, exc)
+    return "{}: {}".format(type(exc).__name__, exc)
 
 
 @app.errorhandler(BadRequest)
@@ -363,4 +364,5 @@ def bad_request(error):
 
 @app.errorhandler(Exception)
 def internal_server_error(error):
+    logging.exception("Exception while handling request: {}".format(error))
     return jsonify(message=format_exc(error)), 500
