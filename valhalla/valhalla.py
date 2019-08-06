@@ -348,10 +348,19 @@ def random_string(size=20, chars=string.ascii_letters + string.digits):
 
 
 @app.errorhandler(405)
-def methodNotAllowed(status):
+def method_not_allowed(status):
     return jsonify(error="Method Not Allowed"), 405
 
 
+def format_exc(exc):
+    return "%s: %s".format(type(exc).__name__, exc)
+
+
 @app.errorhandler(BadRequest)
-def raiseUserError(error):
-    return jsonify(message=type(error).__name__ + ": " + str(error)), 400
+def bad_request(error):
+    return jsonify(message=format_exc(error)), 400
+
+
+@app.errorhandler(Exception)
+def internal_server_error(error):
+    return jsonify(message=format_exc(error)), 500
