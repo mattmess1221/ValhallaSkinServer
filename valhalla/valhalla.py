@@ -193,7 +193,7 @@ def gen_skin_hash(image_data):
     valid = width / 2 == height or width == height
 
     if not valid or width not in sizes:
-        raise ValueError("Unsupported image size: " + image.size)
+        raise ValueError("Unsupported image size: " + str(image.size))
 
     # Create a hash of the image and use it as the filename.
     return hashlib.sha1(image.tobytes()).hexdigest()

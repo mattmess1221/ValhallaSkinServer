@@ -23,4 +23,4 @@ class regex:
 
 
 def noneof(*args):
-    return r"^(?!^(?:%s)$).+$" % '|'.join(args)
+    return fr"^(?!^(?:{'|'.join(args)})$).+$"
