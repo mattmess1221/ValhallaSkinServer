@@ -180,7 +180,7 @@ def gen_skin_hash(image_data):
     image = Image.open(BytesIO(image_data))
 
     if image.format != "PNG":
-        raise ValueError("Format not allowed: " + image.format)
+        raise BadRequest("Format not allowed: " + image.format)
 
     # Check size of image.
     # width should be same as or double the height
@@ -193,7 +193,7 @@ def gen_skin_hash(image_data):
     valid = width / 2 == height or width == height
 
     if not valid or width not in sizes:
-        raise ValueError("Unsupported image size: " + str(image.size))
+        raise BadRequest("Unsupported image size: " + str(image.size))
 
     # Create a hash of the image and use it as the filename.
     return hashlib.sha1(image.tobytes()).hexdigest()
