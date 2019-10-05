@@ -11,4 +11,4 @@ ENV EXTRA_PIP_MODULES=""
 RUN pip install pipenv gunicorn $EXTRA_PIP_MODULES -q
 RUN pipenv install --deploy
 
-ENTRYPOINT [ "gunicorn", "valhalla:create_app()", "-c", "python:gunicornconfig" ]
+CMD [ "gunicorn", "valhalla:create_app()", "-c", "python:gunicornconfig" ]
