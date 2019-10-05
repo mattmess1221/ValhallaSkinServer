@@ -8,16 +8,12 @@ flask = "*"
 requests = "*"
 expiringdict = "*"
 pillow = "*"
-pydal = "*"
-"fs-s3fs" = "*"
+fs = "*"
 python-dotenv = "*"
-"psycopg2-binary" = "*"
+flask-sqlalchemy = "*"
+flask-restplus = "*"
+flask-httpauth = "*"
+sqlalchemy-utils = "*"
 
 [requires]
 python_version = "3.7"
-
-[dev-packages]
-"pep8" = "*"
-pylint = "*"
-rope = "*"
-"autopep8" = "*"

@@ -1,6 +1,6 @@
-*.pyc
+**/*.pyc
 textures/
 .vscode/
-*.db
+**/*.db
 .env
 .idea/
