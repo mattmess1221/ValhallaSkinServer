@@ -33,7 +33,7 @@ def open_fs():
 
 
 def create_app(config_import="config.Config"):
-    app = Flask(__name__)
+    app = Flask(__name__, static_url_path='/')
     app.config.from_object(config_import)
 
     from .models import db
@@ -49,10 +49,8 @@ def create_app(config_import="config.Config"):
 
     register_legacy_v1_api(app)
 
-    from .root import bp
     from .api.v1 import apiv1
 
-    app.register_blueprint(bp)
     app.register_blueprint(apiv1)
 
     if bool(app.config['DEBUG']):
