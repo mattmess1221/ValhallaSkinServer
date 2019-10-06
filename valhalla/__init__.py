@@ -3,7 +3,7 @@ import string
 import warnings
 
 import fs
-from flask import Flask, Blueprint, redirect, url_for, current_app
+from flask import Flask, Blueprint, redirect, url_for, current_app, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 __all__ = [
@@ -42,7 +42,7 @@ def create_app(config_import="config.Config"):
 
     db.create_all()
 
-    app.wsgi_app = ProxyFix(app.wsgi_app)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2)
 
     from .util import UserConverter
     app.url_map.converters['user'] = UserConverter
@@ -55,6 +55,10 @@ def create_app(config_import="config.Config"):
 
     if bool(app.config['DEBUG']):
         app.register_blueprint(Blueprint("textures", __name__, static_folder="textures", static_url_path="/textures"))
+
+    @app.before_request
+    def pre_request():
+        print(request.headers)
 
     @app.before_first_request
     def init_auth():
