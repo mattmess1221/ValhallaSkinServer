@@ -16,12 +16,15 @@ import requests
 from PIL import Image
 from expiringdict import ExpiringDict
 from flask import Flask, abort, jsonify, request, send_file
+from werkzeug.middleware.proxy_fix import ProxyFix
 from fs import open_fs
 
 from . import database, mojang
 from .validate import regex, noneof
 
 app = Flask(__name__)
+
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2)
 
 db_path = os.getenv('DATABASE_URL', 'sqlite://hdskins.sqlite')
 textures_fs = os.getenv('TEXTURES_FS', 'file://.')
@@ -52,7 +55,7 @@ def authorize(func):
 
                 if token is None or user is None:
                     return jsonify(message="Unauthorized"), 401
-                uploader = db.find_uploader(user, get_remote_addr())
+                uploader = db.find_uploader(user, request.remote_addr)
                 access = db.find_token(uploader)
                 if access is None or access.token != token:
                     return jsonify(message="Authorization failed"), 403
@@ -212,7 +215,7 @@ def put_texture(uuid, file, skin_type, **metadata):
 
         user = db.find_user(uuid)
         assert user is not None
-        uploader = db.find_uploader(user, get_remote_addr())
+        uploader = db.find_uploader(user, request.remote_addr)
         assert uploader is not None
 
         skin_hash = gen_skin_hash(file)
@@ -259,12 +262,13 @@ def auth_handshake():
 
     The public key is used by the client to join a server for verification.
     """
-
+    import pprint
+    pprint.pprint(request.headers)
     name = request.form['name']
 
     # Generate a random 32 bit integer. It will be checked later.
     verify_token = random.getrandbits(32)
-    validate_tokens[name] = verify_token, get_remote_addr()
+    validate_tokens[name] = verify_token, request.remote_addr
 
     return jsonify(
         offline=offline_mode,
@@ -293,12 +297,12 @@ def auth_response():
 
         if token != verify_token:
             forbidden('The verify token is not valid')
-        if addr != get_remote_addr():
+        if addr != request.remote_addr:
             forbidden('IP does not match')
     finally:
         del (validate_tokens[name])
 
-    response = mojang.has_joined(name, server_id, get_remote_addr())
+    response = mojang.has_joined(name, server_id, request.remote_addr)
 
     if not response.ok:
         abort(403)
@@ -335,13 +339,6 @@ def init_auth():
 
     with open_database() as db:
         db.commit()
-
-
-def get_remote_addr():
-    try:
-        return request.environ['HTTP_X_FORWARDED_FOR']
-    except KeyError:
-        return request.remote_addr
 
 
 def random_string(size=20, chars=string.ascii_letters + string.digits):
