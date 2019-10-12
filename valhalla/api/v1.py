@@ -5,6 +5,7 @@ import random
 from datetime import datetime
 from io import BytesIO
 from typing import List
+from uuid import UUID
 
 from PIL import Image
 from expiringdict import ExpiringDict
@@ -30,7 +31,7 @@ def gen_auth_token(user: User, expiration):
 
 @auth.error_handler
 def auth_failed():
-    abort(401)
+    return abort(401, "Authentication failed")
 
 
 @auth.verify_token
@@ -39,11 +40,11 @@ def verify_auth_token(token):
     try:
         data = s.loads(token)
     except SignatureExpired:
-        abort(401, "Token expired")
+        return None
     except BadSignature:
-        abort(401, "Bad token")
+        return None
     else:
-        g.user = User.get(data['id'])
+        g.user = User.query.get(data['id'])
         return g.user
 
 
@@ -78,37 +79,28 @@ class UserResource(Resource):
                 typ = tex.tex_type.upper()
                 upload = tex.upload
                 if upload is None:
-                    continue
-                dic = {'url': root_url() + '/textures/' + upload.hash}
-                metadata = dict(metadata_json(tex.meta))
-                if metadata:  # Only include metadata if there is any
-                    dic['metadata'] = metadata
-                yield typ, dic
+                    yield typ, None
+                else:
+                    dic = tex.todict()
+                    if not dic['metadata']:
+                        del dic['metadata']
+                    yield typ, dic
 
-        active = Texture.query(Texture). \
+        active = Texture.query. \
             filter_by(user=user). \
-            order_by(Texture.id).reverse(). \
             distinct(Texture.tex_type). \
             all()
 
-        textures = dict(textures_json(active))
-        tex: Texture
-        for tex in active:
-            if tex.upload is None:
-                continue
-            dic = {'url': f"{root_url()}/textures/{tex.upload.hash}"}
-            metadata = dict(metadata_json(tex.meta))
-            if metadata:
-                dic['metadata'] = metadata
+        textures = {k: v for k, v in dict(textures_json(active)).items() if v}
 
         if not textures:
             return abort(404, "Skins not found")
-        return jsonify(
-            timestamp=calendar.timegm(datetime.utcnow().utctimetuple()),
-            profileId=user.uuid,
-            profileName=user.name,
-            textures=dict(textures)
-        )
+        return {
+            'timestamp': calendar.timegm(datetime.utcnow().utctimetuple()),
+            'profileId': str(user.uuid).replace('-', ''),
+            'profileName': user.name,
+            'textures': dict(textures)
+        }
 
 
 def get_metadata_map(form):
@@ -129,13 +121,16 @@ class TextureResource(Resource):
 
     @require_formdata('file')
     def post(self, user: User, skin_type):
-        url = request.form.pop("file")
-        resp = requests.get(url)
-        if not resp.ok:
-            abort(400, "File download failed", error=resp.text)
-
-        metadata = get_metadata_map(request.form)
-        put_texture(user, resp.content, skin_type, **dict(metadata))
+        form = request.form.copy()
+        url = form.pop("file")
+        try:
+            with requests.get(url) as resp:
+                resp.raise_for_status()
+                metadata = get_metadata_map(form)
+                print("Downloading")
+                put_texture(user, resp.content, skin_type, **dict(metadata))
+        except Exception as e:
+            abort(400, "File download failed", error=str(e))
 
         return "", 202
 
@@ -160,7 +155,7 @@ class TextureResource(Resource):
             metadata=None)
         )
         db.session.commit()
-        return "{}", 202
+        return "", 202
 
 
 def gen_skin_hash(image_data):
@@ -192,16 +187,20 @@ def put_texture(user: User, file, skin_type, **metadata):
 
     if upload is None:
         with open_fs() as fs:
-            with fs.open(skin_hash, "wb") as f:
+            with fs.open("textures/" + skin_hash, "wb") as f:
                 f.write(file)
 
-        upload = db.session.add(Upload(hash=skin_hash, user=user))
+        upload = Upload(hash=skin_hash, user=user)
+        db.session.add(upload)
 
-    db.session.add(Texture(user=user,
-                           tex_type=skin_type,
-                           upload=upload,
-                           metadata=[Metadata(key=k, value=v) for k, v in metadata.items()]))
+    tex = Texture(user=user,
+                  tex_type=skin_type,
+                  upload=upload,
+                  metadata=[Metadata(key=k, value=v) for k, v in metadata.items()])
+
+    db.session.add(tex)
     db.session.commit()
+    return tex
 
 
 # Validate tokens are kept 100 at a time for 30 seconds each
@@ -225,11 +224,11 @@ class AuthHandshakeResource(Resource):
         verify_token = random.getrandbits(32)
         validate_tokens[name] = verify_token, request.remote_addr
 
-        return jsonify(
-            offline=offline_mode(),
-            serverId=current_app.config['server_id'],
-            verifyToken=verify_token
-        )
+        return {
+            'offline': offline_mode(),
+            'serverId': current_app.config['server_id'],
+            'verifyToken': verify_token
+        }
 
 
 @api.route('/auth/response')
@@ -271,24 +270,26 @@ class AuthResponseResource(Resource):
         uuid = json['id']
         name = json['name']
 
-        user = get_or_create_user(uuid, name)
+        update_or_insert_user(uuid, name)
+        user = User.query.filter_by(uuid=uuid).one()
         # Expire token after 1 hour
-        token = f"Bearer {gen_auth_token(user, expiration=3600)}"
+        token = f"Bearer {gen_auth_token(user, expiration=3600).decode('ascii')}"
 
-        return jsonify(
+        resp = jsonify(
             accessToken=token,
-            userId=user.uuid,
-        ), 200, {
-                   'Authorization': token
-               }
+            userId=str(user.uuid).replace('-', '')
+        )
+        resp.status_code = 200
+        resp.headers['Authorization'] = token
+
+        return resp
 
 
-def get_or_create_user(uuid, name) -> User:
+def update_or_insert_user(uuid: UUID, name: str):
     user = User.query.filter_by(uuid=uuid).one_or_none()
     if user is None:
         user = User(uuid=uuid, name=name)
         db.session.add(user)
     else:
         user.name = name
-        db.session.commit()
-    return user
+    db.session.commit()

@@ -3,20 +3,14 @@ import string
 import warnings
 
 import fs
-from flask import Flask, Blueprint, redirect, url_for, current_app, request
+from flask import Flask, current_app
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 __all__ = [
-    "root_url",
     "open_fs",
     "offline_mode",
     "blacklist"
 ]
-
-
-def root_url():
-    warnings.warn("Use a endpoing with url_for", DeprecationWarning)
-    return current_app.config['ROOT_URL']
 
 
 def offline_mode():
@@ -29,12 +23,28 @@ def blacklist():
 
 def open_fs():
     path = current_app.config['TEXTURES_FS']
-    return fs.open_fs(path, cwd='textures', writeable=True)
+    return fs.open_fs(path, writeable=True)
 
 
 def create_app(config_import="config.Config"):
-    app = Flask(__name__, static_url_path='/')
+    app = Flask(__name__)
     app.config.from_object(config_import)
+
+    app.add_url_rule('/textures/<path:filename>',
+                     endpoint='textures',
+                     build_only=not app.config['DEBUG'],
+                     view_func=app.send_static_file)
+
+    #
+    # app.url_map = Flask.url_map_class()
+    # app.url_map.host_matching = True
+    # app.add_url_rule(app.static_url_path + '/<path:filename>',
+    #                  endpoint='static',
+    #                  host='localhost',
+    #                  view_func=app.send_static_file)
+
+    # Reset the url map to remove static
+    # app.url_map = Flask.url_map_class()
 
     from .models import db
     db.app = app
@@ -53,13 +63,6 @@ def create_app(config_import="config.Config"):
 
     app.register_blueprint(apiv1)
 
-    if bool(app.config['DEBUG']):
-        app.register_blueprint(Blueprint("textures", __name__, static_folder="textures", static_url_path="/textures"))
-
-    @app.before_request
-    def pre_request():
-        print(request.headers)
-
     @app.before_first_request
     def init_auth():
         app.config['server_id'] = random_string(20)
@@ -68,21 +71,22 @@ def create_app(config_import="config.Config"):
 
 
 def register_legacy_v1_api(app):
-    @app.route('/user/<uuid:user>')
+    @app.route('/user/<user:user>')
     def get_textures(**kwargs):
-        return redirect(url_for('api_v1.user_resource', **kwargs), 308)
+        return app.view_functions['api_v1.user_resource'](**kwargs)
 
-    @app.route('/user/<uuid:user>/<skinType>', methods=['POST', 'PUT', 'DELETE'])
+    @app.route('/user/<user:user>/<skin_type>', methods=['POST', 'PUT', 'DELETE'])
     def change_skin(**kwargs):
-        return redirect(url_for('api_v1.texture_resource', **kwargs), 308)
+        print("FAIL")
+        return app.view_functions['api_v1.texture_resource'](**kwargs)
 
     @app.route('/auth/handshake', methods=["POST"])
-    def auth_handshake():
-        return redirect(url_for('api_v1.auth_handshake_resource'), 308)
+    def auth_handshake(**kwargs):
+        return app.view_functions['api_v1.auth_handshake_resource'](**kwargs)
 
     @app.route('/auth/response', methods=['POST'])
-    def auth_response():
-        return redirect(url_for('api_v1.auth_response_resource'), 308)
+    def auth_response(**kwargs):
+        return app.view_functions['api_v1.auth_response_resource'](**kwargs)
 
 
 def random_string(size, chars=string.ascii_letters + string.digits):
