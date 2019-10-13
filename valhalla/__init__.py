@@ -3,7 +3,8 @@ import random
 import string
 
 import fs
-from flask import Flask, current_app
+from flask import Flask, current_app, abort, send_from_directory
+from flask_cdn import CDN
 from flask_alembic import Alembic
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import MapAdapter
@@ -25,7 +26,13 @@ def blacklist():
 
 def open_fs():
     path = current_app.config['TEXTURES_FS']
-    return fs.open_fs(path, cwd='textures', writeable=True)
+    return fs.open_fs(path, writeable=True)
+
+
+def send_texture(filename):
+    if current_app.config['CDN_DEBUG']:
+        return send_from_directory('textures', filename, mimetype='image/png')
+    abort(418)
 
 
 def create_app(config_import="config.Config"):
@@ -34,19 +41,12 @@ def create_app(config_import="config.Config"):
 
     app.add_url_rule('/textures/<path:filename>',
                      endpoint='textures',
-                     build_only=not app.config['DEBUG'],
-                     view_func=app.send_static_file)
-
-    app.add_url_rule('/textures/<path:filename>',
-                     endpoint='textures',
-                     view_func=app.send_static_file)
+                     view_func=send_texture)
 
     from .models import db
     db.app = app
     db.init_app(app)
     alembic = Alembic(app)
-
-    from flask_cdn import CDN
 
     cdn = CDN(app)
 
@@ -59,7 +59,7 @@ def create_app(config_import="config.Config"):
         @functools.wraps(func)
         def decorator(self, endpoint, values=None, **kwargs):
             if values:
-                values.pop('_external')
+                values.pop('_external', None)
             return func(self, endpoint, values=values, **kwargs)
 
         return decorator

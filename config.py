@@ -21,7 +21,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', "sqlite:///valhalla.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    TEXTURES_FS = os.getenv('TEXTURES_FS', 'file://./valhalla/static')
+    TEXTURES_FS = os.getenv('TEXTURES_FS', './valhalla')
     OFFLINE = bool(os.getenv('OFFLINE', False))
     SKIN_BLACKLIST = ["cape"]
 

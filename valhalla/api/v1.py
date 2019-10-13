@@ -181,11 +181,13 @@ def put_texture(user: User, file, skin_type, **metadata):
 
     upload = Upload.query.filter_by(hash=skin_hash).first()
 
-    if upload is None:
-        with open_fs() as fs:
-            with fs.open(skin_hash, "wb") as f:
+    with open_fs() as fs:
+        skin_file = f'textures/{skin_hash}'
+        if not fs.exists(skin_file):
+            with fs.open(skin_file, "wb") as f:
                 f.write(file)
 
+    if upload is None:
         upload = Upload(hash=skin_hash, user=user)
         db.session.add(upload)
 
