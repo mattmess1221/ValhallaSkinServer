@@ -68,10 +68,6 @@ class UserResource(Resource):
         if user is None:
             return abort(404, "User not found")
 
-        def metadata_json(data):
-            for meta in data:
-                yield meta.key, meta.value
-
         def textures_json(texture_list: List[Texture]):
             if not texture_list:
                 return None
@@ -196,7 +192,7 @@ def put_texture(user: User, file, skin_type, **metadata):
     tex = Texture(user=user,
                   tex_type=skin_type,
                   upload=upload,
-                  metadata=[Metadata(key=k, value=v) for k, v in metadata.items()])
+                  metadata=metadata)
 
     db.session.add(tex)
     db.session.commit()

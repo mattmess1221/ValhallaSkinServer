@@ -42,10 +42,6 @@ SESSION_SERVER = 'https://sessionserver.mojang.com/session/minecraft'
 Identity = namedtuple("Identity", ["name", "user_id", "access_token"])
 
 
-class SkinServerError(Exception):
-    pass
-
-
 def error_response(f):
     def decorator(*args, **kwargs):
         resp: requests.Response = f(*args, **kwargs)
@@ -72,7 +68,6 @@ class SkinServer:
         self.identity = identity
         name, user_id, access_token = identity
         with self.session.post(f"{self.host}/auth/handshake", data={'name': name}) as r:
-            r.raise_for_status()
             j = r.json()
 
         server_id = j['serverId']
@@ -82,36 +77,33 @@ class SkinServer:
             'accessToken': access_token,
             'selectedProfile': str(user_id).replace('-', ''),
             'serverId': server_id
-        }) as r:
-            r.raise_for_status()
+        }):
+            pass
 
         with self.session.post(f"{self.host}/auth/response", data={
             'name': name,
             'verifyToken': verify_token
         }) as r:
-            r.raise_for_status()
             j = r.json()
 
         self.session.headers['Authorization'] = j['accessToken']
 
     def get(self, user: uuid.UUID):
         with self.session.get(f"{self.host}/api/v1/user/{user}") as r:
-            r.raise_for_status()
             return r.json()
 
     def put_file(self, file, skin_type, **metadata):
         with self.session.put(f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}", data=metadata,
-                              files={'file': file}) as r:
-            r.raise_for_status()
+                              files={'file': file}):
+            pass
 
     def post_url(self, url, skin_type, **metadata):
         with self.session.post(f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}",
-                               data={'file': url, **metadata}) as r:
-            r.raise_for_status()
+                               data={'file': url, **metadata}):
+            pass
 
     def delete(self, skin_type):
-        with self.session.delete(f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}") as r:
-            r.raise_for_status()
+        with self.session.delete(f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}"):
             pass
 
 
@@ -128,7 +120,7 @@ def cli(ctx, host):
 @click.option("--user-id", type=uuid.UUID, show_envvar=True, required=True)
 @click.password_option("--access-token", confirmation_prompt=False, show_envvar=True, required=True)
 @click.pass_obj
-def edit(server: SkinServer, name: str, user_id: uuid, access_token: str):
+def edit(server: SkinServer, name: str, user_id: uuid.UUID, access_token: str):
     """Sub-command to edit your textures on the server"""
     server.login(Identity(name, user_id, access_token))
 

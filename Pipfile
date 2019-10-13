@@ -14,6 +14,7 @@ flask-sqlalchemy = "*"
 flask-restplus = "*"
 flask-httpauth = "*"
 sqlalchemy-utils = "*"
+flask-alembic = "*"
 
 [requires]
 python_version = "3.7"

@@ -1,9 +1,9 @@
 import random
 import string
-import warnings
 
 import fs
 from flask import Flask, current_app
+from flask_alembic import Alembic
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 __all__ = [
@@ -49,8 +49,7 @@ def create_app(config_import="config.Config"):
     from .models import db
     db.app = app
     db.init_app(app)
-
-    db.create_all()
+    alembic = Alembic(app)
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2)
 
@@ -62,6 +61,9 @@ def create_app(config_import="config.Config"):
     from .api.v1 import apiv1
 
     app.register_blueprint(apiv1)
+
+    from . import cli
+    cli.init_app(app)
 
     @app.before_first_request
     def init_auth():
