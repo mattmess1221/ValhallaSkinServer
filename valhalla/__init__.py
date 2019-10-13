@@ -1,3 +1,4 @@
+import functools
 import random
 import string
 
@@ -5,6 +6,7 @@ import fs
 from flask import Flask, current_app
 from flask_alembic import Alembic
 from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.routing import MapAdapter
 
 __all__ = [
     "open_fs",
@@ -23,7 +25,7 @@ def blacklist():
 
 def open_fs():
     path = current_app.config['TEXTURES_FS']
-    return fs.open_fs(path, writeable=True)
+    return fs.open_fs(path, cwd='textures', writeable=True)
 
 
 def create_app(config_import="config.Config"):
@@ -35,22 +37,34 @@ def create_app(config_import="config.Config"):
                      build_only=not app.config['DEBUG'],
                      view_func=app.send_static_file)
 
-    #
-    # app.url_map = Flask.url_map_class()
-    # app.url_map.host_matching = True
-    # app.add_url_rule(app.static_url_path + '/<path:filename>',
-    #                  endpoint='static',
-    #                  host='localhost',
-    #                  view_func=app.send_static_file)
-
-    # Reset the url map to remove static
-    # app.url_map = Flask.url_map_class()
+    app.add_url_rule('/textures/<path:filename>',
+                     endpoint='textures',
+                     view_func=app.send_static_file)
 
     from .models import db
     db.app = app
     db.init_app(app)
     alembic = Alembic(app)
 
+    from flask_cdn import CDN
+
+    cdn = CDN(app)
+
+    def fix_externals(func):
+        """Fixes an issue where undesired values are send to the url by flask_cdn.
+
+        Should probably be fixed in the library
+        """
+
+        @functools.wraps(func)
+        def decorator(self, endpoint, values=None, **kwargs):
+            if values:
+                values.pop('_external')
+            return func(self, endpoint, values=values, **kwargs)
+
+        return decorator
+
+    MapAdapter.build = fix_externals(MapAdapter.build)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2)
 
     from .util import UserConverter

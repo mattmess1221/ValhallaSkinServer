@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import List
 
 import sqlalchemy as sa
 import sqlalchemy_utils as sau
-from flask import request, url_for
+from flask import request
+from flask_cdn import url_for
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import *
+from sqlalchemy.orm import relationship
 from sqlalchemy_utils import generic_repr
 
 __all__ = [
@@ -64,6 +64,6 @@ class Texture(db.Model):
 
     def todict(self):
         return {
-            'url': url_for('static', filename=f'textures/{self.upload.hash}', _external=True),
+            'url': url_for('textures', filename=self.upload.hash, _external=True),
             'metadata': self.meta
         }

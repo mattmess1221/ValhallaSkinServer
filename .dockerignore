@@ -1,5 +1,5 @@
 **/*.pyc
-valhalla/static/textures/
+valhalla/textures/
 .vscode/
 **/*.db
 .env

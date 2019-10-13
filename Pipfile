@@ -15,6 +15,10 @@ flask-restplus = "*"
 flask-httpauth = "*"
 sqlalchemy-utils = "*"
 flask-alembic = "*"
+flask-cdn = "*"
+psycopg2-binary = "*"
+gunicorn = "*"
+fs-s3fs = "*"
 
 [requires]
 python_version = "3.7"

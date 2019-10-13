@@ -83,11 +83,12 @@ class UserResource(Resource):
                     yield typ, dic
 
         active = Texture.query. \
+            order_by(Texture.tex_type, Texture.id.desc()). \
             filter_by(user=user). \
             distinct(Texture.tex_type). \
             all()
 
-        textures = {k: v for k, v in dict(textures_json(active)).items() if v}
+        textures = {k: v for k, v in textures_json(active) if v}
 
         if not textures:
             return abort(404, "Skins not found")
@@ -123,9 +124,8 @@ class TextureResource(Resource):
             with requests.get(url) as resp:
                 resp.raise_for_status()
                 metadata = get_metadata_map(form)
-                print("Downloading")
                 put_texture(user, resp.content, skin_type, **dict(metadata))
-        except Exception as e:
+        except requests.HTTPError as e:
             abort(400, "File download failed", error=str(e))
 
         return "", 202
@@ -183,7 +183,7 @@ def put_texture(user: User, file, skin_type, **metadata):
 
     if upload is None:
         with open_fs() as fs:
-            with fs.open("textures/" + skin_hash, "wb") as f:
+            with fs.open(skin_hash, "wb") as f:
                 f.write(file)
 
         upload = Upload(hash=skin_hash, user=user)
