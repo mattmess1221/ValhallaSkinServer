@@ -24,9 +24,14 @@ def init_app(app: Flask):
     from . import old_models
     Session = sessionmaker()
 
+    @app.cli.command("reset-secret")
+    def reset_secret():
+        models.SecretSanity.query.delete()
+        models.db.session.commit()
+
     @app.cli.command("migrate-data")
     @click.argument("old_db")
-    def main(old_db):
+    def migrate_data(old_db):
         """Migrates data from the old database format to the newer one."""
         old_engine = create_engine(old_db)
         old_session: _Session = Session(bind=old_engine)

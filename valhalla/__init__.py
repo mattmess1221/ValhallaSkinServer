@@ -4,8 +4,9 @@ import string
 
 import fs
 from flask import Flask, current_app, abort, send_from_directory
-from flask_cdn import CDN
 from flask_alembic import Alembic
+from flask_cdn import CDN
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import MapAdapter
 
@@ -43,7 +44,7 @@ def create_app(config_import="config.Config"):
                      endpoint='textures',
                      view_func=send_texture)
 
-    from .models import db
+    from .models import db, SecretSanity
     db.app = app
     db.init_app(app)
     alembic = Alembic(app)
@@ -82,6 +83,19 @@ def create_app(config_import="config.Config"):
     @app.before_first_request
     def init_auth():
         app.config['server_id'] = random_string(20)
+
+    @app.before_request
+    def secret_sanity_check():
+        secret = app.config['SECRET_KEY']
+        try:
+            saved_secret = SecretSanity.query.one()
+            if saved_secret.secret != secret:
+                abort(500, "Sanity error! Secret does not match, did the secret change?")
+        except NoResultFound:
+            db.session.add(SecretSanity(secret=secret))
+            db.session.commit()
+        except MultipleResultsFound:
+            abort(500, "Multiple secrets found. Something has gone terribly wrong.")
 
     return app
 

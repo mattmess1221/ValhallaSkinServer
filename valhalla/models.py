@@ -12,6 +12,7 @@ from sqlalchemy_utils import generic_repr
 
 __all__ = [
     "db",
+    'SecretSanity',
     "User",
     "Upload",
     "Texture"
@@ -23,6 +24,12 @@ db = SQLAlchemy()
 @generic_repr
 class AlembicVersion(db.Model):
     version_num = sa.Column(sa.String(32), primary_key=True)
+
+
+@generic_repr
+class SecretSanity(db.Model):
+    id = sa.Column(sa.Integer, primary_key=True)
+    secret = sa.Column(sau.PasswordType(schemes=['pbkdf2_sha512']), nullable=False)
 
 
 @generic_repr
