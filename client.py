@@ -29,9 +29,11 @@ $ ./client.py show <some user id>
 
 """
 
+import logging
+import sys
 import uuid
 from collections import namedtuple
-from typing import Optional
+from typing import Optional, Type
 
 import click
 import requests
@@ -42,18 +44,19 @@ SESSION_SERVER = 'https://sessionserver.mojang.com/session/minecraft'
 Identity = namedtuple("Identity", ["name", "user_id", "access_token"])
 
 
-def error_response(f):
-    def decorator(*args, **kwargs):
-        resp: requests.Response = f(*args, **kwargs)
-        try:
-            resp.raise_for_status()
-            return resp
-        except requests.HTTPError:
-            error = resp.json()
-            resp.close()
-            raise click.ClickException(f"{error}")
+class MojangError(Exception):
+    pass
 
-    return decorator
+
+class HDSkinsError(Exception):
+    pass
+
+
+def verify_error(response: requests.Response, wrap_exc: Type[Exception] = HDSkinsError):
+    try:
+        response.raise_for_status()
+    except requests.HTTPError:
+        raise wrap_exc(response.text)
 
 
 class SkinServer:
@@ -62,57 +65,96 @@ class SkinServer:
         self.session = requests.Session()
         self.identity: Optional[Identity] = None
 
-        self.session.request = error_response(self.session.request)
-
     def login(self, identity: Identity):
         self.identity = identity
         name, user_id, access_token = identity
-        with self.session.post(f"{self.host}/auth/handshake", data={'name': name}) as r:
+
+        logging.info("Logging in...")
+        logging.info("Skin Server = %s", self.host)
+        logging.info("Login name = %s", name)
+        logging.info("Login uuid = %s", user_id)
+
+        url = f"{self.host}/auth/handshake"
+
+        logging.debug(f"Sending auth handshake to {url}")
+        with self.session.post(url, data={'name': name}) as r:
+            verify_error(r)
             j = r.json()
+
+        logging.debug(f"Auth handshake response = {j}")
 
         server_id = j['serverId']
         verify_token = j['verifyToken']
+
+        logging.debug("Authenticating with Mojang")
 
         with self.session.post(f'{SESSION_SERVER}/join', json={
             'accessToken': access_token,
             'selectedProfile': str(user_id).replace('-', ''),
             'serverId': server_id
-        }):
-            pass
-
-        with self.session.post(f"{self.host}/auth/response", data={
-            'name': name,
-            'verifyToken': verify_token
         }) as r:
+            verify_error(r, MojangError)
+
+        url = f"{self.host}/auth/response"
+
+        logging.debug(f"Sending auth response to {url}")
+        with self.session.post(url, data={'name': name, 'verifyToken': verify_token}) as r:
+            verify_error(r)
             j = r.json()
 
         self.session.headers['Authorization'] = j['accessToken']
 
+        logging.info("Login complete")
+
     def get(self, user: uuid.UUID):
+        logging.info("Getting textures owned by %s", user)
         with self.session.get(f"{self.host}/api/v1/user/{user}") as r:
+            verify_error(r)
             return r.json()
 
     def put_file(self, file, skin_type, **metadata):
+        logging.info("Uploading %s for %s", skin_type, self.identity.name)
         with self.session.put(f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}", data=metadata,
-                              files={'file': file}):
-            pass
+                              files={'file': file}) as r:
+            verify_error(r)
+
+        logging.info("Done")
 
     def post_url(self, url, skin_type, **metadata):
+        logging.info("Uploading %s for %s", skin_type, self.identity.name)
         with self.session.post(f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}",
-                               data={'file': url, **metadata}):
-            pass
+                               data={'file': url, **metadata}) as r:
+            verify_error(r)
+
+        logging.info("Done")
 
     def delete(self, skin_type):
-        with self.session.delete(f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}"):
-            pass
+        logging.info("Deleting %s for %s", skin_type, self.identity.name)
+        with self.session.delete(f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}") as r:
+            verify_error(r)
+
+        logging.info("Done")
 
 
 @click.group()
-@click.option("--host", default=DEFAULT_SERVER, show_default=True)
+@click.option("--host", default=DEFAULT_SERVER, show_default=True, show_envvar=True)
+@click.option("-v", count=True)
 @click.pass_context
-def cli(ctx, host):
+def cli(ctx, host, v):
     """Client for interacting with the skin server."""
     ctx.obj = SkinServer(host)
+
+    logging.basicConfig(level=logging.getLevelName(logging.WARNING - (v * 10)))
+
+    @ctx.call_on_close
+    def on_close():
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        if isinstance(exc_value, (MojangError, HDSkinsError)):
+            raise click.ClickException(f"{exc_type.__name__}: {exc_value}")
+
+
+# Allows passing root arguments from sub-commands. e.g. edit file $filename -vv --host=$skin_host
+cli.allow_interspersed_args = True
 
 
 @cli.group("edit")
