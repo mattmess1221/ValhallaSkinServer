@@ -262,8 +262,6 @@ def auth_handshake():
 
     The public key is used by the client to join a server for verification.
     """
-    import pprint
-    pprint.pprint(request.headers)
     name = request.form['name']
 
     # Generate a random 32 bit integer. It will be checked later.
