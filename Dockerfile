@@ -12,4 +12,4 @@ ADD Pipfile* ./
 RUN pipenv install --deploy
 
 ADD . /app
-CMD [ "gunicorn", "valhalla:create_app()", "-c", "python:gunicornconfig" ]
+CMD [ "gunicorn", "wsgi" ]

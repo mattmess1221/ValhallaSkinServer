@@ -1,2 +1,0 @@
-fs-s3fs
-psycopg2-binary
