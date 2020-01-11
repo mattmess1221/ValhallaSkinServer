@@ -3,7 +3,7 @@ import random
 import string
 
 import fs
-from flask import Flask, current_app, abort, send_from_directory
+from flask import Flask, current_app, abort, send_from_directory, make_response, jsonify, request
 from flask_alembic import Alembic
 from flask_cdn import CDN
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
@@ -71,7 +71,7 @@ def create_app(config_import="config.Config"):
     from .util import UserConverter
     app.url_map.converters['user'] = UserConverter
 
-    register_legacy_v1_api(app)
+    register_legacy_v0_api(app)
 
     from .api.v1 import apiv1
 
@@ -100,15 +100,17 @@ def create_app(config_import="config.Config"):
     return app
 
 
-def register_legacy_v1_api(app):
+def register_legacy_v0_api(app):
     @app.route('/user/<user:user>')
     def get_textures(**kwargs):
         return app.view_functions['api_v1.user_resource'](**kwargs)
 
     @app.route('/user/<user:user>/<skin_type>', methods=['POST', 'PUT', 'DELETE'])
     def change_skin(**kwargs):
-        print("FAIL")
-        return app.view_functions['api_v1.texture_resource'](**kwargs)
+        app.view_functions['api_v1.texture_resource'](**kwargs)
+        if request.method == 'DELETE':
+            return dict(message='skin cleared')
+        return dict(message="OK")
 
     @app.route('/auth/handshake', methods=["POST"])
     def auth_handshake(**kwargs):
