@@ -3,8 +3,7 @@ import random
 import string
 
 import fs
-from flask import Flask, current_app, abort, send_from_directory, make_response, jsonify, request
-from flask_alembic import Alembic
+from flask import Flask, current_app, abort, send_from_directory
 from flask_cdn import CDN
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -47,8 +46,6 @@ def create_app(config_import="config.Config"):
     from .models import db, SecretSanity
     db.app = app
     db.init_app(app)
-    alembic = Alembic(app)
-
     cdn = CDN(app)
 
     def fix_externals(func):

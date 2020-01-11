@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import List
 
 import sqlalchemy as sa
@@ -19,11 +20,6 @@ __all__ = [
 ]
 
 db = SQLAlchemy()
-
-
-@generic_repr
-class AlembicVersion(db.Model):
-    version_num = sa.Column(sa.String(32), primary_key=True)
 
 
 @generic_repr
@@ -51,7 +47,7 @@ class Upload(db.Model):
     id = sa.Column(sa.Integer, primary_key=True)
     hash = sa.Column(sa.String, nullable=False, unique=True)
     user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id"), nullable=False)
-    upload_time = sa.Column(sa.DateTime, server_default="now()", nullable=False)
+    upload_time = sa.Column(sa.DateTime, default=datetime.now, nullable=False)
 
     user: User = relationship('User')
 
@@ -64,7 +60,7 @@ class Texture(db.Model):
     user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id"), nullable=False)
     upload_id = sa.Column(sa.Integer, sa.ForeignKey("uploads.id"))
     tex_type = sa.Column(sa.String, nullable=False)
-    meta = sa.Column(sa.JSON, default={})
+    meta = sa.Column(sa.JSON, default=dict)
 
     user: User = relationship("User", back_populates="textures")
     upload: Upload = relationship("Upload")

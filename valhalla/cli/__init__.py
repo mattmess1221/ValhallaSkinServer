@@ -24,6 +24,10 @@ def init_app(app: Flask):
     from . import old_models
     Session = sessionmaker()
 
+    @app.cli.command("initdb")
+    def initdb():
+        models.db.Model.metadata.create_all(models.db.engine)
+
     @app.cli.command("reset-secret")
     def reset_secret():
         models.SecretSanity.query.delete()
