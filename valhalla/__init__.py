@@ -71,10 +71,10 @@ def create_app(config_import="config.Config"):
     from .util import UserConverter
     app.url_map.converters['user'] = UserConverter
 
-    register_legacy_v0_api(app)
-
+    from .api.v0 import apiv0
     from .api.v1 import apiv1
 
+    app.register_blueprint(apiv0)
     app.register_blueprint(apiv1)
 
     from . import cli
@@ -98,27 +98,6 @@ def create_app(config_import="config.Config"):
             abort(500, "Multiple secrets found. Something has gone terribly wrong.")
 
     return app
-
-
-def register_legacy_v0_api(app):
-    @app.route('/user/<user:user>')
-    def get_textures(**kwargs):
-        return app.view_functions['api_v1.user_resource'](**kwargs)
-
-    @app.route('/user/<user:user>/<skin_type>', methods=['POST', 'PUT', 'DELETE'])
-    def change_skin(**kwargs):
-        app.view_functions['api_v1.texture_resource'](**kwargs)
-        if request.method == 'DELETE':
-            return dict(message='skin cleared')
-        return dict(message="OK")
-
-    @app.route('/auth/handshake', methods=["POST"])
-    def auth_handshake(**kwargs):
-        return app.view_functions['api_v1.auth_handshake_resource'](**kwargs)
-
-    @app.route('/auth/response', methods=['POST'])
-    def auth_response(**kwargs):
-        return app.view_functions['api_v1.auth_response_resource'](**kwargs)
 
 
 def random_string(size, chars=string.ascii_letters + string.digits):
