@@ -181,11 +181,16 @@ def put_texture(user: User, file, skin_type, **metadata):
 
     upload = Upload.query.filter_by(hash=skin_hash).first()
 
-    with open_fs() as fs:
-        skin_file = f'textures/{skin_hash}'
-        if not fs.exists(skin_file):
-            with fs.open(skin_file, "wb") as f:
-                f.write(file)
+    try:
+        with open_fs() as fs:
+            skin_file = f'textures/{skin_hash}'
+            if not fs.exists(skin_file):
+                with fs.open(skin_file, "wb") as f:
+                    f.write(file)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        abort(500, f"Error saving texture file: {type(e).__name__}: {e}")
 
     if upload is None:
         upload = Upload(hash=skin_hash, user=user)
