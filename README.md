@@ -7,7 +7,6 @@ This is an alternative skin server for Minecraft. It has a few benefits over
  - Arbitrary metadata.
  - Non-skin uploads (Elytras and capes)
 
-In order to take advantage of this server, [a client mod](https://github.com/MineLittlePony/MineLittlePony) is required.
- A standalone client mod may come in the future.
+In order to take advantage of this server, [a client mod](https://github.com/MineLittlePony/HDSkins) is required.
 
 See the [wiki](./wiki) for details on endpoints.

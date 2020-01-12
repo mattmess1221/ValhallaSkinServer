@@ -1,7 +1,5 @@
 *.pyc
-textures/
 .vscode/
 *.db
-*.sqlite
 .env
 .idea/
