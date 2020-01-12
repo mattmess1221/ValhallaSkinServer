@@ -28,8 +28,12 @@ $ ./client.py edit delete
 $ ./client.py show <some user id>
 
 """
-
+import functools
+import json
 import logging
+import os
+import pathlib
+import platform
 import sys
 import uuid
 from collections import namedtuple
@@ -153,18 +157,73 @@ def cli(ctx, host, v):
             raise click.ClickException(f"{exc_type.__name__}: {exc_value}")
 
 
-# Allows passing root arguments from sub-commands. e.g. edit file $filename -vv --host=$skin_host
-cli.allow_interspersed_args = True
+def get_minecraft_dir():
+    name = platform.system()
+    if name == 'Windows':
+        return "%APPDATA%\\.minecraft"
+    elif name == 'Darwin':
+        return "~/Library/Application Support/minecraft"
+    else:
+        return "~/.minecraft"
 
 
-@cli.group("edit")
+def get_launcher_auth():
+    mcdir = os.path.expandvars(get_minecraft_dir())
+    profile = pathlib.Path(mcdir) / 'launcher_profiles.json'
+    if not profile.exists():
+        return {}
+
+    # can't use the logger here, it isn't set up yet.
+
+    def log_error(msg):
+        click.echo(f"Can't get auth data from launcher: {msg}.")
+        click.echo("You will need to provide auth data manually.")
+
+    with open(profile) as p:
+        try:
+            launcher = json.load(p)
+            click.echo(f"Loaded auth data from {profile}.")
+        except (OSError, json.JSONDecodeError) as e:
+            log_error(f"{type(e).__name__}: {e}")
+            return {}
+
+    if 'selectedUser' not in launcher:
+        log_error("Not logged in")
+        return {}
+
+    account = launcher['selectedUser']['account']
+    user_id = launcher['selectedUser']['profile']
+    auth_data = launcher['authenticationDatabase'][account]
+    access_token = auth_data['accessToken']
+    user_name = auth_data['profiles'][user_id]['displayName']
+
+    return {
+        "name": user_name,
+        "user_id": user_id,
+        "access_token": access_token
+    }
+
+
+@cli.group("edit", context_settings=dict(default_map=get_launcher_auth()))
 @click.option("--name", show_envvar=True, required=True)
 @click.option("--user-id", type=uuid.UUID, show_envvar=True, required=True)
 @click.password_option("--access-token", confirmation_prompt=False, show_envvar=True, required=True)
 @click.pass_obj
 def edit(server: SkinServer, name: str, user_id: uuid.UUID, access_token: str):
     """Sub-command to edit your textures on the server"""
-    server.login(Identity(name, user_id, access_token))
+
+    def login_callback(f):
+        @functools.wraps(f)
+        def decorator(*args, **kwargs):
+            server.login(Identity(name, user_id, access_token))
+            return f(*args, **kwargs)
+
+        return decorator
+
+    # All commands require login, but doing it now interrupts parsing.
+    # Injecting it into the callback is better.
+    for c in edit.commands.values():
+        c.callback = login_callback(c.callback)
 
 
 @edit.command("file")
