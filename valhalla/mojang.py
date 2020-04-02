@@ -14,4 +14,3 @@ def has_joined(name: str, server_hash: str, address: str) -> requests.Response:
         "serverId": server_hash,
         "ip": address
     })  # 204 means success, but 403 means fail
-

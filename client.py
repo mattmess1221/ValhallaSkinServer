@@ -229,19 +229,21 @@ def edit(server: SkinServer, name: str, user_id: uuid.UUID, access_token: str):
 @edit.command("file")
 @click.argument("file", type=click.File('rb'))
 @click.option("--type", default="skin")
+@click.option("--meta", default="{}", type=json.loads)
 @click.pass_obj
-def put_file(server: SkinServer, file, type):
+def put_file(server: SkinServer, file, type, meta):
     """Uploads a texture from your local machine"""
-    server.put_file(file, type)
+    server.put_file(file, type, **meta)
 
 
 @edit.command("url")
 @click.argument("url")
 @click.option("--type", default="skin")
+@click.option("--meta", default="{}", type=json.loads)
 @click.pass_obj
-def post_url(server: SkinServer, url, type):
+def post_url(server: SkinServer, url, type, meta):
     """Uploads a texture from the internet."""
-    server.post_url(url, type)
+    server.post_url(url, type, **meta)
 
 
 @edit.command("delete")

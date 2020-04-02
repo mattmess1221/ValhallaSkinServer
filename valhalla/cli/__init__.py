@@ -41,7 +41,7 @@ def init_app(app: Flask):
         old_session: _Session = Session(bind=old_engine)
 
         max_id = 0
-        u: old_models.Uploader
+        u: old_models.User
         for u in migrate(old_session.query(old_models.User), "Users"):
             max_id = max(max_id, u.id)
             models.db.session.add(models.User(

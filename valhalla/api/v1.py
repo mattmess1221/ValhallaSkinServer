@@ -100,11 +100,6 @@ class UserResource(Resource):
         }
 
 
-def get_metadata_map(form):
-    for k, v in form.items():
-        yield k, v
-
-
 @api.route('/user/<user:user>/<skin_type>')
 class TextureResource(Resource):
 
@@ -123,8 +118,8 @@ class TextureResource(Resource):
         try:
             with requests.get(url) as resp:
                 resp.raise_for_status()
-                metadata = get_metadata_map(form)
-                put_texture(user, resp.content, skin_type, **dict(metadata))
+                metadata = dict(form)
+                put_texture(user, resp.content, skin_type, **metadata)
         except requests.HTTPError as e:
             abort(400, "File download failed", error=str(e))
 
@@ -138,8 +133,8 @@ class TextureResource(Resource):
         if not file:
             raise abort(400, "Empty file?")
 
-        metadata = get_metadata_map(request.form)
-        put_texture(user, file.read(), skin_type, **dict(metadata))
+        metadata = dict(request.form)
+        put_texture(user, file.read(), skin_type, **metadata)
 
         return "", 202
 
@@ -199,7 +194,7 @@ def put_texture(user: User, file, skin_type, **metadata):
     tex = Texture(user=user,
                   tex_type=skin_type,
                   upload=upload,
-                  metadata=metadata)
+                  meta=metadata)
 
     db.session.add(tex)
     db.session.commit()
