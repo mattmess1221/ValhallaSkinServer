@@ -11,7 +11,7 @@ from PIL import Image, UnidentifiedImageError
 from expiringdict import ExpiringDict
 from flask import Blueprint, current_app, jsonify, request, g
 from flask_httpauth import HTTPTokenAuth
-from flask_restplus import Api, Resource, abort
+from flask_restx import Api, Resource, abort
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 
 from .. import *

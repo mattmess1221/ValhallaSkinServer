@@ -15,6 +15,10 @@ Required for production:
 
 import os
 
+import dotenv
+
+dotenv.load_dotenv()
+
 
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY')
@@ -29,6 +33,8 @@ class Config:
     CDN_HTTPS = CDN_DOMAIN is not None
     CDN_ENDPOINTS = ["textures"]
     CDN_TIMESTAMP = False
+
+    RAYGUN_APIKEY = os.getenv("RAYGUN_APIKEY")
 
 
 class DebugConfig(Config):

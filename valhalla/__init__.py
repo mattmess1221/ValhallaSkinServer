@@ -1,10 +1,12 @@
 import functools
 import random
 import string
+import sys
 
 import fs
 from flask import Flask, current_app, abort, send_from_directory
 from flask_cdn import CDN
+from raygun4py import raygunprovider
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import MapAdapter
@@ -47,6 +49,13 @@ def create_app(config_import="config.Config"):
     db.app = app
     db.init_app(app)
     cdn = CDN(app)
+
+    raygun = raygunprovider.RaygunSender(app.config['RAYGUN_APIKEY'])
+
+    @app.errorhandler(500)
+    def on_internal_server_error(e):
+        raygun.send_exception(e.original_exception, sys.exc_info())
+        return e
 
     def fix_externals(func):
         """Fixes an issue where undesired values are send to the url by flask_cdn.
