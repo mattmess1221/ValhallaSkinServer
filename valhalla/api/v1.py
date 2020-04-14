@@ -7,7 +7,7 @@ from io import BytesIO
 from typing import List
 from uuid import UUID
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from expiringdict import ExpiringDict
 from flask import Blueprint, current_app, jsonify, request, g
 from flask_httpauth import HTTPTokenAuth
@@ -172,7 +172,10 @@ def gen_skin_hash(image_data):
 
 
 def put_texture(user: User, file, skin_type, **metadata):
-    skin_hash = gen_skin_hash(file)
+    try:
+        skin_hash = gen_skin_hash(file)
+    except UnidentifiedImageError as e:
+        raise abort(400, str(e))
 
     upload = Upload.query.filter_by(hash=skin_hash).first()
 
