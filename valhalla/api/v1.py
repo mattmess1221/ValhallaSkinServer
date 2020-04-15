@@ -264,16 +264,12 @@ class AuthResponseResource(Resource):
             del validate_tokens[name]
 
         with has_joined(name, current_app.config['server_id'], request.remote_addr) as response:
-            if not response.ok:
+            if not response.ok or not response.text:
                 abort(403)
 
             try:
                 j = response.json()
             except json.JSONDecodeError:
-                # Variables here for raygun
-                status = response.status_code
-                headers = response.headers
-                text = response.text
                 raise OSError("Bad response from login servers.")
 
         uuid = j['id']
