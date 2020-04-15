@@ -1,6 +1,5 @@
 **/*.pyc
 valhalla/textures/
-.vscode/
 **/*.db
-.env
-.idea/
+.*
+*.egg-info/
