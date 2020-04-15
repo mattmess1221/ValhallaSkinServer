@@ -1,6 +1,7 @@
 import calendar
 import functools
 import hashlib
+import json
 import random
 from datetime import datetime
 from io import BytesIO
@@ -266,10 +267,16 @@ class AuthResponseResource(Resource):
             if not response.ok:
                 abort(403)
 
-            json = response.json()
+            try:
+                j = response.json()
+            except json.JSONDecodeError:
+                # Variables here for raygun
+                headers = response.headers
+                text = response.text
+                raise OSError("Bad response from login servers.")
 
-        uuid = json['id']
-        name = json['name']
+        uuid = j['id']
+        name = j['name']
 
         update_or_insert_user(uuid, name)
         user = User.query.filter_by(uuid=uuid).one()
