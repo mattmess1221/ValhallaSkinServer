@@ -72,7 +72,7 @@ def create_app(config_import="config.Config"):
         return decorator
 
     MapAdapter.build = fix_externals(MapAdapter.build)
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2)
+    app.wsgi_app = ProxyFix(app.wsgi_app)
 
     from .util import UserConverter
     app.url_map.converters['user'] = UserConverter
