@@ -271,6 +271,7 @@ class AuthResponseResource(Resource):
                 j = response.json()
             except json.JSONDecodeError:
                 # Variables here for raygun
+                status = response.status_code
                 headers = response.headers
                 text = response.text
                 raise OSError("Bad response from login servers.")
