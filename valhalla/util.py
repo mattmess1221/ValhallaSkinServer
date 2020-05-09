@@ -12,7 +12,7 @@ class UserConverter(BaseConverter):
             uuid = UUID(value)
             return User.query.filter_by(uuid=uuid).one()
         except (ValueError, NoResultFound):
-            raise ValidationError()
+            return None
 
     def to_url(self, value):
         if isinstance(value, User):

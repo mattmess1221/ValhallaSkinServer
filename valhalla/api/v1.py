@@ -106,6 +106,8 @@ class TextureResource(Resource):
 
     @auth.login_required
     def dispatch_request(self, user, skin_type):
+        if user is None:
+            abort(404, "User not found")
         if skin_type in blacklist():
             abort(400, f"Type '{skin_type}' is not allowed. ")
         if user != g.user:
