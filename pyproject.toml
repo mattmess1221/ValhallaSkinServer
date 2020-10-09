@@ -6,7 +6,6 @@ authors = ["Matthew Messinger <mattmess1221@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-request = "^2019.4.13"
 requests = "^2.23.0"
 flask = "^1.1.2"
 expiringdict = "^1.2.0"
