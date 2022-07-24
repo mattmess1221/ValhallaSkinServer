@@ -42,8 +42,8 @@ from typing import Optional, Type
 import click
 import requests
 
-DEFAULT_SERVER = 'http://localhost:5000'
-SESSION_SERVER = 'https://sessionserver.mojang.com/session/minecraft'
+DEFAULT_SERVER = "http://localhost:5000"
+SESSION_SERVER = "https://sessionserver.mojang.com/session/minecraft"
 
 Identity = namedtuple("Identity", ["name", "user_id", "access_token"])
 
@@ -81,32 +81,37 @@ class SkinServer:
         url = f"{self.host}/auth/handshake"
 
         logging.debug(f"Sending auth handshake to {url}")
-        with self.session.post(url, data={'name': name}) as r:
+        with self.session.post(url, data={"name": name}) as r:
             verify_error(r)
             j = r.json()
 
         logging.debug(f"Auth handshake response = {j}")
 
-        server_id = j['serverId']
-        verify_token = j['verifyToken']
+        server_id = j["serverId"]
+        verify_token = j["verifyToken"]
 
         logging.debug("Authenticating with Mojang")
 
-        with self.session.post(f'{SESSION_SERVER}/join', json={
-            'accessToken': access_token,
-            'selectedProfile': str(user_id).replace('-', ''),
-            'serverId': server_id
-        }) as r:
+        with self.session.post(
+            f"{SESSION_SERVER}/join",
+            json={
+                "accessToken": access_token,
+                "selectedProfile": str(user_id).replace("-", ""),
+                "serverId": server_id,
+            },
+        ) as r:
             verify_error(r, MojangError)
 
         url = f"{self.host}/auth/response"
 
         logging.debug(f"Sending auth response to {url}")
-        with self.session.post(url, data={'name': name, 'verifyToken': verify_token}) as r:
+        with self.session.post(
+            url, data={"name": name, "verifyToken": verify_token}
+        ) as r:
             verify_error(r)
             j = r.json()
 
-        self.session.headers['Authorization'] = j['accessToken']
+        self.session.headers["Authorization"] = j["accessToken"]
 
         logging.info("Login complete")
 
@@ -118,23 +123,30 @@ class SkinServer:
 
     def put_file(self, file, skin_type, **metadata):
         logging.info("Uploading %s for %s", skin_type, self.identity.name)
-        with self.session.put(f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}", data=metadata,
-                              files={'file': file}) as r:
+        with self.session.put(
+            f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}",
+            data=metadata,
+            files={"file": file},
+        ) as r:
             verify_error(r)
 
         logging.info("Done")
 
     def post_url(self, url, skin_type, **metadata):
         logging.info("Uploading %s for %s", skin_type, self.identity.name)
-        with self.session.post(f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}",
-                               data={'file': url, **metadata}) as r:
+        with self.session.post(
+            f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}",
+            data={"file": url, **metadata},
+        ) as r:
             verify_error(r)
 
         logging.info("Done")
 
     def delete(self, skin_type):
         logging.info("Deleting %s for %s", skin_type, self.identity.name)
-        with self.session.delete(f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}") as r:
+        with self.session.delete(
+            f"{self.host}/api/v1/user/{self.identity.user_id}/{skin_type}"
+        ) as r:
             verify_error(r)
 
         logging.info("Done")
@@ -159,9 +171,9 @@ def cli(ctx, host, v):
 
 def get_minecraft_dir():
     name = platform.system()
-    if name == 'Windows':
+    if name == "Windows":
         return "%APPDATA%\\.minecraft"
-    elif name == 'Darwin':
+    elif name == "Darwin":
         return "~/Library/Application Support/minecraft"
     else:
         return "~/.minecraft"
@@ -169,7 +181,7 @@ def get_minecraft_dir():
 
 def get_launcher_auth():
     mcdir = os.path.expandvars(get_minecraft_dir())
-    profile = pathlib.Path(mcdir) / 'launcher_profiles.json'
+    profile = pathlib.Path(mcdir) / "launcher_profiles.json"
     if not profile.exists():
         return {}
 
@@ -187,27 +199,25 @@ def get_launcher_auth():
             log_error(f"{type(e).__name__}: {e}")
             return {}
 
-    if 'selectedUser' not in launcher:
+    if "selectedUser" not in launcher:
         log_error("Not logged in")
         return {}
 
-    account = launcher['selectedUser']['account']
-    user_id = launcher['selectedUser']['profile']
-    auth_data = launcher['authenticationDatabase'][account]
-    access_token = auth_data['accessToken']
-    user_name = auth_data['profiles'][user_id]['displayName']
+    account = launcher["selectedUser"]["account"]
+    user_id = launcher["selectedUser"]["profile"]
+    auth_data = launcher["authenticationDatabase"][account]
+    access_token = auth_data["accessToken"]
+    user_name = auth_data["profiles"][user_id]["displayName"]
 
-    return {
-        "name": user_name,
-        "user_id": user_id,
-        "access_token": access_token
-    }
+    return {"name": user_name, "user_id": user_id, "access_token": access_token}
 
 
 @cli.group("edit", context_settings=dict(default_map=get_launcher_auth()))
 @click.option("--name", show_envvar=True, required=True)
 @click.option("--user-id", type=uuid.UUID, show_envvar=True, required=True)
-@click.password_option("--access-token", confirmation_prompt=False, show_envvar=True, required=True)
+@click.password_option(
+    "--access-token", confirmation_prompt=False, show_envvar=True, required=True
+)
 @click.pass_obj
 def edit(server: SkinServer, name: str, user_id: uuid.UUID, access_token: str):
     """Sub-command to edit your textures on the server"""
@@ -227,7 +237,7 @@ def edit(server: SkinServer, name: str, user_id: uuid.UUID, access_token: str):
 
 
 @edit.command("file")
-@click.argument("file", type=click.File('rb'))
+@click.argument("file", type=click.File("rb"))
 @click.option("--type", default="skin")
 @click.option("--meta", default="{}", type=json.loads)
 @click.pass_obj
@@ -259,8 +269,8 @@ def delete_skin(server: SkinServer, type):
 @click.pass_obj
 def show(server: SkinServer, user_id):
     """Show a user's texture data"""
-    click.echo(server.get(user_id)['textures'])
+    click.echo(server.get(user_id)["textures"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli(auto_envvar_prefix="HDSKINS")

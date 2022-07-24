@@ -8,12 +8,13 @@ from io import BytesIO
 from typing import List
 from uuid import UUID
 
-from PIL import Image, UnidentifiedImageError
 from expiringdict import ExpiringDict
-from flask import Blueprint, current_app, jsonify, request, g
+from flask import Blueprint, current_app, g, jsonify, request
 from flask_httpauth import HTTPTokenAuth
 from flask_restx import Api, Resource, abort
-from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
+from itsdangerous import BadSignature, SignatureExpired
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from PIL import Image, UnidentifiedImageError
 
 from .. import *
 from ..models import *
@@ -26,8 +27,8 @@ api = Api(apiv1)
 
 
 def gen_auth_token(user: User, expiration):
-    s = Serializer(current_app.config['SECRET_KEY'], expires_in=expiration)
-    return s.dumps({'id': user.id})
+    s = Serializer(current_app.config["SECRET_KEY"], expires_in=expiration)
+    return s.dumps({"id": user.id})
 
 
 @auth.error_handler
@@ -37,7 +38,7 @@ def auth_failed():
 
 @auth.verify_token
 def verify_auth_token(token):
-    s = Serializer(current_app.config['SECRET_KEY'])
+    s = Serializer(current_app.config["SECRET_KEY"])
     try:
         data = s.loads(token)
     except SignatureExpired:
@@ -45,7 +46,7 @@ def verify_auth_token(token):
     except BadSignature:
         return None
     else:
-        g.user = User.query.get(data['id'])
+        g.user = User.query.get(data["id"])
         return g.user
 
 
@@ -63,7 +64,7 @@ def require_formdata(*formdata):
     return call
 
 
-@api.route('/user/<user:user>')
+@api.route("/user/<user:user>")
 class UserResource(Resource):
     def get(self, user: User):
         if user is None:
@@ -79,31 +80,31 @@ class UserResource(Resource):
                     yield typ, None
                 else:
                     dic = tex.todict()
-                    if not dic['metadata']:
-                        del dic['metadata']
+                    if not dic["metadata"]:
+                        del dic["metadata"]
                     yield typ, dic
 
-        active = Texture.query. \
-            order_by(Texture.tex_type, Texture.id.desc()). \
-            filter_by(user=user). \
-            distinct(Texture.tex_type). \
-            all()
+        active = (
+            Texture.query.order_by(Texture.tex_type, Texture.id.desc())
+            .filter_by(user=user)
+            .distinct(Texture.tex_type)
+            .all()
+        )
 
         textures = {k: v for k, v in textures_json(active) if v}
 
         if not textures:
             return abort(404, "Skins not found")
         return {
-            'timestamp': calendar.timegm(datetime.utcnow().utctimetuple()),
-            'profileId': str(user.uuid).replace('-', ''),
-            'profileName': user.name,
-            'textures': dict(textures)
+            "timestamp": calendar.timegm(datetime.utcnow().utctimetuple()),
+            "profileId": str(user.uuid).replace("-", ""),
+            "profileName": user.name,
+            "textures": dict(textures),
         }
 
 
-@api.route('/user/<user:user>/<skin_type>')
+@api.route("/user/<user:user>/<skin_type>")
 class TextureResource(Resource):
-
     @auth.login_required
     def dispatch_request(self, user, skin_type):
         if user is None:
@@ -114,7 +115,7 @@ class TextureResource(Resource):
             abort(403, "Cannot change another user's textures")
         super().dispatch_request(user, skin_type)
 
-    @require_formdata('file')
+    @require_formdata("file")
     def post(self, user: User, skin_type):
         form = request.form.copy()
         url = form.pop("file")
@@ -129,9 +130,9 @@ class TextureResource(Resource):
         return "", 202
 
     def put(self, user: User, skin_type):
-        if 'file' not in request.files:
-            raise abort(400, 'Missing required file: file')
-        file = request.files['file']
+        if "file" not in request.files:
+            raise abort(400, "Missing required file: file")
+        file = request.files["file"]
 
         if not file:
             raise abort(400, "Empty file?")
@@ -142,11 +143,8 @@ class TextureResource(Resource):
         return "", 202
 
     def delete(self, user: User, skin_type):
-        db.session.add(Texture(
-            user=user,
-            tex_type=skin_type,
-            upload=None,
-            metadata=None)
+        db.session.add(
+            Texture(user=user, tex_type=skin_type, upload=None, metadata=None)
         )
         db.session.commit()
         return "", 202
@@ -184,12 +182,13 @@ def put_texture(user: User, file, skin_type, **metadata):
 
     try:
         with open_fs() as fs:
-            skin_file = f'textures/{skin_hash}'
+            skin_file = f"textures/{skin_hash}"
             if not fs.exists(skin_file):
                 with fs.open(skin_file, "wb") as f:
                     f.write(file)
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         abort(500, f"Error saving texture file: {type(e).__name__}: {e}")
 
@@ -197,10 +196,7 @@ def put_texture(user: User, file, skin_type, **metadata):
         upload = Upload(hash=skin_hash, user=user)
         db.session.add(upload)
 
-    tex = Texture(user=user,
-                  tex_type=skin_type,
-                  upload=upload,
-                  meta=metadata)
+    tex = Texture(user=user, tex_type=skin_type, upload=upload, meta=metadata)
 
     db.session.add(tex)
     db.session.commit()
@@ -211,36 +207,36 @@ def put_texture(user: User, file, skin_type, **metadata):
 validate_tokens = ExpiringDict(100, 30)
 
 
-@api.route('/auth/handshake')
+@api.route("/auth/handshake")
 class AuthHandshakeResource(Resource):
-
-    @api.doc(params={
-        'name': 'The username'
-    }, verify=True)
+    @api.doc(params={"name": "The username"}, verify=True)
     def post(self):
         """Use this endpoint to receive an authentication request.
 
         The public key is used by the client to join a server for verification.
         """
-        name = request.form['name']
+        name = request.form["name"]
 
         # Generate a random 32 bit integer. It will be checked later.
         verify_token = random.getrandbits(32)
         validate_tokens[name] = verify_token, request.remote_addr
 
         return {
-            'offline': offline_mode(),
-            'serverId': current_app.config['server_id'],
-            'verifyToken': verify_token
+            "offline": offline_mode(),
+            "serverId": current_app.config["server_id"],
+            "verifyToken": verify_token,
         }
 
 
-@api.route('/auth/response')
+@api.route("/auth/response")
 class AuthResponseResource(Resource):
-    @api.doc(params={
-        'name': "The player username",
-        "verifyToken": "The token gotten from /auth/handshake"
-    }, verify=True)
+    @api.doc(
+        params={
+            "name": "The player username",
+            "verifyToken": "The token gotten from /auth/handshake",
+        },
+        verify=True,
+    )
     def post(self):
         """Call after a handshake and Mojang's joinServer.
 
@@ -249,23 +245,25 @@ class AuthResponseResource(Resource):
         if offline_mode():
             abort(501)  # Not Implemented
 
-        name = str(request.form['name'])
-        verify_token = int(request.form['verifyToken'])
+        name = str(request.form["name"])
+        verify_token = int(request.form["verifyToken"])
 
         if name not in validate_tokens:
-            abort(403, 'The user has not requested a token or it has expired')
+            abort(403, "The user has not requested a token or it has expired")
 
         try:
             token, addr = validate_tokens[name]
 
             if token != verify_token:
-                abort(403, 'The verify token is not valid')
+                abort(403, "The verify token is not valid")
             if addr != request.remote_addr:
-                abort(403, 'IP does not match')
+                abort(403, "IP does not match")
         finally:
             del validate_tokens[name]
 
-        with has_joined(name, current_app.config['server_id'], request.remote_addr) as response:
+        with has_joined(
+            name, current_app.config["server_id"], request.remote_addr
+        ) as response:
             if not response.ok or not response.text:
                 abort(403)
 
@@ -274,20 +272,17 @@ class AuthResponseResource(Resource):
             except json.JSONDecodeError:
                 raise OSError("Bad response from login servers.")
 
-        uuid = j['id']
-        name = j['name']
+        uuid = j["id"]
+        name = j["name"]
 
         update_or_insert_user(uuid, name)
         user = User.query.filter_by(uuid=uuid).one()
         # Expire token after 1 hour
         token = f"Bearer {gen_auth_token(user, expiration=3600).decode('ascii')}"
 
-        resp = jsonify(
-            accessToken=token,
-            userId=str(user.uuid).replace('-', '')
-        )
+        resp = jsonify(accessToken=token, userId=str(user.uuid).replace("-", ""))
         resp.status_code = 200
-        resp.headers['Authorization'] = token
+        resp.headers["Authorization"] = token
 
         return resp
 

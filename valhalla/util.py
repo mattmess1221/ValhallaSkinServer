@@ -1,7 +1,7 @@
 from uuid import UUID
 
-from sqlalchemy.orm.exc import NoResultFound
-from werkzeug.routing import BaseConverter, ValidationError
+from sqlalchemy.exc import NoResultFound
+from werkzeug.routing import BaseConverter
 
 from .models import User
 
