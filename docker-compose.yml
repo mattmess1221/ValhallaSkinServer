@@ -1,4 +1,4 @@
-version: "2.1"
+version: "3"
 services:
   database:
     image: postgres
@@ -15,22 +15,9 @@ services:
     environment:
       - DATABASE_URL=postgres://postgres:password@database:5432/skins_db
       - SECRET_KEY=234017y0wpu07yq34taqa34g6jna
-      - FLASK_APP=app.py
-      - FLASK_ENV=development
-      - PYTHONFAULTHANDLER=1
-      - PYTHONUNBUFFERED=1
-      - PYTHONHASHSEED=random
-    working_dir: /src/app
-    volumes:
-      - .:/src/app
 
-    command: >
-      bash -c "
-      flask initdb;
-      flask run -h 0.0.0.0 -p 5000;
-      "
     ports:
-      - 5000:5000
+      - 8080:80
     depends_on:
       database:
         condition: service_healthy

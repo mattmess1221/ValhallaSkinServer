@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% from "vite.html" import render_vite with context%}
+
+{% block content %}
+<div id="app"></div>
+{{ render_vite("src/main.ts") }}
+{% endblock %}

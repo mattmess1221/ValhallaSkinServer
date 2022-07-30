@@ -1,25 +1,49 @@
-FROM python:3.7
+# build the dashboard vite project
+FROM node:16-alpine AS dashboard
+WORKDIR /src/app/dashboard
 
-ARG YOUR_ENV
+RUN npm install -g npm pnpm
+COPY dashboard/pnpm-lock.yaml .
+RUN pnpm fetch
+COPY dashboard/ ./
+RUN pnpm install && pnpm build
 
-ENV YOUR_ENV=${YOUR_ENV} \
-  PYTHONFAULTHANDLER=1 \
-  PYTHONUNBUFFERED=1 \
-  PYTHONHASHSEED=random \
-  PIP_NO_CACHE_DIR=off \
-  PIP_DISABLE_PIP_VERSION_CHECK=on \
-  PIP_DEFAULT_TIMEOUT=100 \
-  POETRY_VERSION=1.0.5
+# base image for python layers
+FROM python:3.10-alpine AS python-base
 
-RUN pip install "poetry==$POETRY_VERSION"
+# some configuration.
+# python: auto-flush stdout
+# pip: disable cache, version checks, and root warnings
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=no \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_ROOT_USER_ACTION=ignore
+
+RUN pip install -q -U pip
+
+# export the lock file to requirements to be used with pip
+FROM python-base AS poetry
+
+RUN pip install poetry
 
 WORKDIR /src/app
-COPY poetry.lock pyproject.toml /src/app/
 
-RUN poetry config virtualenvs.create false && \
-    poetry install --no-interaction --no-ansi
+COPY pyproject.toml poetry.lock ./
+RUN poetry export -o requirements.txt
 
-COPY . /src/app
+# the final layer, will run the server
+FROM python-base
 
-ENV PORT=5000
-CMD [ "gunicorn", "wsgi" ]
+WORKDIR /src/app
+
+# copy over the requirements.txt and install it
+COPY --from=poetry /src/app/requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY valhalla valhalla
+COPY --from=dashboard /src/app .
+
+# default port, heroku can override this
+ENV PORT=80
+EXPOSE $PORT
+CMD gunicorn valhalla:app -k uvicorn.workers.UvicornWorker
