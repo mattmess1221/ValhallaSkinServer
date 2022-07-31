@@ -10,6 +10,7 @@
     "lint": "prettier -lw src && eslint src --ext js,ts,vue"
   },
   "dependencies": {
+    "@fontsource/roboto": "^4.5.7",
     "@trivago/prettier-plugin-sort-imports": "^3.3.0",
     "modern-normalize": "^1.1.0",
     "vue": "^3.2.37"
