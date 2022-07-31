@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
+
 type Option = string;
-type Options = Option[] | Record<any, Option>;
+type Options = Option[] | Record<string, Option>;
 
 interface Props {
   options: Options;

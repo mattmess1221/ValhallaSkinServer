@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+
 import SelectButton from "./SelectButton.vue";
 import Switch from "./Switch.vue";
 
@@ -48,8 +49,9 @@ async function fetchSkin() {
   return null;
 }
 
-async function uploadSkin(this: HTMLFormElement) {
-  const data = new FormData(this);
+async function uploadSkin(event: Event) {
+  const data = new FormData(event.target as HTMLFormElement);
+  // TODO finish skin uploads
   const resp = await fetch("/api/v1/user/@me", {
     method: "POST",
     headers: {
@@ -59,9 +61,10 @@ async function uploadSkin(this: HTMLFormElement) {
   });
 }
 
-function setSkinFile(this: HTMLInputElement) {
-  if (this.files?.length) {
-    skinFile.value = this.files[0];
+function setSkinFile(event: Event) {
+  const target = event.target as HTMLInputElement;
+  if (target.files?.length) {
+    skinFile.value = target.files[0];
   }
 }
 
