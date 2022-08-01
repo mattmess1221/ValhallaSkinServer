@@ -1,6 +1,6 @@
 module.exports = {
   plugins: [require.resolve("@trivago/prettier-plugin-sort-imports")],
-  importOrder: ["^[a-z]", "^[./]"],
+  importOrder: ["^[@a-z]", "^[./]"],
   importOrderSeparation: true,
-  importOrderSortSepcifiers: true,
+  importOrderSortSpecifiers: true,
 };
