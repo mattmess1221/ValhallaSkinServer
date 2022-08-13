@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     dashboard_dev_server: AnyHttpUrl = Field("http://localhost:5173")
 
     secret_key: str = "dev"
-    database_url = "sqlite:///./valhalla.db"
+    database_url = "sqlite+aiosqlite:///./valhalla.db"
 
     # TODO this should be saved in the database
     server_id: str = Field(default_factory=secrets.token_urlsafe)

@@ -11,7 +11,7 @@ from .crud import CRUD
 auth_scheme = OAuth2(auto_error=False)
 
 
-def current_user(
+async def current_user(
     header: str | None = Depends(auth_scheme),
     cookie: str | None = Cookie(default=None, alias="token"),
     crud: CRUD = Depends(),
@@ -21,7 +21,7 @@ def current_user(
         return None
 
     try:
-        return user_from_token(token, crud)
+        return await user_from_token(token, crud)
     except JWTError:
         raise HTTPException(403)
 
@@ -41,7 +41,7 @@ def token_from_user(user: models.User, *, expire_in: timedelta) -> str:
     return jwt.encode(payload, settings.secret_key, algorithm="HS256")
 
 
-def user_from_token(token: str, crud: CRUD) -> models.User:
+async def user_from_token(token: str, crud: CRUD) -> models.User | None:
     payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
     sid = payload["sid"]
-    return crud.get_user(sid)
+    return await crud.get_user(sid)

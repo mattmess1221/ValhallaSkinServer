@@ -1,22 +1,25 @@
-import json
 import sys
-import warnings
-from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from raygun4py import raygunprovider
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.sessions import SessionMiddleware
 
 from . import api, dashboard, models
 from .config import settings
 from .database import engine
 
-models.Base.metadata.create_all(bind=engine)
-
 app = FastAPI()
+
+
+@app.on_event("startup")
+async def onstart():
+    session: AsyncSession
+    async with engine.begin() as session:
+        await session.run_sync(models.Base.metadata.create_all)
+
 
 app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
 

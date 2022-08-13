@@ -1,55 +1,87 @@
 import itertools
 from datetime import datetime
 from operator import attrgetter
-from typing import Iterator
+from typing import AsyncIterable, AsyncIterator, Callable, TypeVar, cast
 from uuid import UUID
 
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.engine import ScalarResult
+from sqlalchemy.ext.asyncio import AsyncScalarResult, AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import Select, and_, update
 
-from . import models, schemas
+from . import models
 from .db import get_db
+
+T = TypeVar("T")
+K = TypeVar("K")
+
+
+async def agroupby(
+    iterable: AsyncIterable[T], key: Callable[[T], K]
+) -> AsyncIterator[tuple[K, list[T]]]:
+    keyval = None
+    keylst = []
+    async for item in iterable:
+        if keyval is None:
+            keyval = key(item)
+        elif keyval != (keyval := key(item)):
+            yield keyval, keylst
+            keylst = []
+        keylst.append(item)
+
+    if keyval:
+        yield keyval, keylst
 
 
 class CRUD:
-    def __init__(self, db: Session = Depends(get_db)) -> None:
+    def __init__(self, db: AsyncSession = Depends(get_db)) -> None:
         self.db = db
 
-    def _users(self):
-        return self.db.query(models.User)
+    async def get_user(self, user_id: int) -> models.User | None:
+        result: ScalarResult = await self.db.scalars(
+            cast(Select, select(models.User)).where(models.User.id == user_id).limit(1)
+        )
+        return result.one_or_none()
 
-    def get_user(self, user_id: int) -> models.User | None:
-        return self._users().filter(models.User.id == user_id).first()
+    async def get_user_by_uuid(self, uuid: UUID) -> models.User | None:
+        result: ScalarResult = await self.db.scalars(
+            cast(Select, select(models.User)).where(models.User.uuid == uuid).limit(1)
+        )
+        return result.one_or_none()
 
-    def get_user_by_uuid(self, uuid: UUID) -> models.User | None:
-        return self._users().filter(models.User.uuid == uuid).first()
-
-    def get_user_textures(
+    async def get_user_textures(
         self,
         user: models.User,
         *,
         limit: int | None = None,
         after: datetime | None = None,
         before: datetime | None = None,
-    ) -> Iterator[tuple[str, Iterator[models.Texture]]]:
-        return (
-            (k, itertools.islice(v, limit))
-            for k, v in itertools.groupby(
-                self.db.query(models.Texture)
-                .join(models.Upload)
-                .filter(
-                    models.Texture.user == user,
+    ) -> list[tuple[str, list[models.Texture]]]:
+        result: AsyncScalarResult = await self.db.stream_scalars(
+            cast(Select, select(models.Texture))
+            .options(selectinload(models.Texture.upload))
+            .where(
+                and_(
+                    models.Texture.user_id == user.id,
                     *((models.Texture.start_time > after,) if after else ()),
                     *((models.Texture.end_time < before) if before else ()),
                 )
-                .order_by(models.Texture.start_time.desc())
-                .limit(limit),
-                key=attrgetter("tex_type"),
             )
+            .order_by(models.Texture.start_time.desc())
+            .limit(limit)
         )
 
-    def get_or_create_user(self, uuid: UUID, name: str, address: str) -> models.User:
-        user = self.get_user_by_uuid(uuid)
+        return [
+            (k, list(itertools.islice(v, limit)))
+            async for k, v in agroupby(result, key=attrgetter("tex_type"))
+        ]
+
+    async def get_or_create_user(
+        self, uuid: UUID, name: str, address: str
+    ) -> models.User:
+        user = await self.get_user_by_uuid(uuid)
         if user is None:
             user = models.User(
                 uuid=uuid,
@@ -63,18 +95,19 @@ class CRUD:
         else:
             user.address = address  # type: ignore
 
-        self.db.commit()
+        await self.db.commit()
 
         return user
 
-    def get_upload(self, texture_hash: str) -> models.Upload | None:
-        return (
-            self.db.query(models.Upload)
-            .filter(models.Upload.hash == texture_hash)
-            .one_or_none()
+    async def get_upload(self, texture_hash: str) -> models.Upload | None:
+        results: ScalarResult = await self.db.scalars(
+            cast(Select, select(models.Upload))
+            .where(models.Upload.hash == texture_hash)
+            .limit(1)
         )
+        return results.one_or_none()
 
-    def put_upload(self, user: models.User, texture_hash: str):
+    async def put_upload(self, user: models.User, texture_hash: str):
         upload = models.Upload(
             hash=texture_hash,
             uploader=user,
@@ -82,17 +115,23 @@ class CRUD:
         self.db.add(upload)
         return upload
 
-    def put_texture(
+    async def put_texture(
         self,
         user: models.User,
         tex_type: str,
         upload: models.Upload,
         meta: dict[str, str],
     ):
-        self.db.query(models.Texture).filter(
-            models.Texture.user == user,
-            models.Texture.tex_type == tex_type,
-        ).update({models.Texture.end_time: datetime.now()})
+        await self.db.execute(
+            update(
+                models.Texture,
+                whereclause=and_(
+                    models.Texture.user == user,
+                    models.Texture.tex_type == tex_type,
+                ),
+                values={models.Texture.end_time: datetime.now()},
+            )
+        )
         self.db.add(
             models.Texture(
                 user=user,
