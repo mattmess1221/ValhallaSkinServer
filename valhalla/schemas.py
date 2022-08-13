@@ -83,6 +83,6 @@ class TextureUpload(BaseModel):
 
 
 class TexturePost(BaseModel):
-    type: AnyHttpUrl
-    file: str
+    type: str
+    file: AnyHttpUrl
     meta: dict[str, str] = {}

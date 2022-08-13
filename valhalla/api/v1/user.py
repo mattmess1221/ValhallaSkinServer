@@ -1,35 +1,54 @@
 from datetime import datetime
-from http.client import UNPROCESSABLE_ENTITY
 from uuid import UUID
 
 import anyio
-from fastapi import APIRouter, Depends, Path, Request
+import httpx
+from fastapi import APIRouter, Depends, Request
 from fastapi.exceptions import HTTPException
+from pydantic import AnyHttpUrl
 from pydantic.error_wrappers import ErrorWrapper, ValidationError
 
 from ... import image, models, schemas
-from ...auth import current_user, require_user
+from ...auth import require_user
+from ...byteconv import mb
 from ...crud import CRUD
 from ...files import Files
 
 router = APIRouter()
 
 
+@router.get("/@me", response_model=schemas.UserTextures, tags=["User Information"])
+def get_current_user_textures(
+    user: models.User = Depends(require_user),
+    after: datetime | None = None,
+    before: datetime | None = None,
+    crud: CRUD = Depends(),
+) -> schemas.UserTextures:
+    return get_user_textures(user, after, before, crud)
+
+
 @router.get(
     "/{user_id}", response_model=schemas.UserTextures, tags=["User Information"]
 )
-@router.get("/@me", response_model=schemas.UserTextures, tags=["User Information"])
-def get_user_textures(
-    user_id: UUID | None = None,
+def get_user_textures_by_uuid(
+    user_id: UUID,
     after: datetime | None = None,
     before: datetime | None = None,
-    user: models.User = Depends(require_user),
     crud: CRUD = Depends(),
-):
+) -> schemas.UserTextures:
     """Get the currently logged in user information."""
-    if user_id is not None:
-        user = crud.get_user_by_uuid(user_id)
+    user = crud.get_user_by_uuid(user_id)
+    if user is None:
+        raise HTTPException(404)
+    return get_user_textures(user, after, before, crud)
 
+
+def get_user_textures(
+    user: models.User,
+    after: datetime | None,
+    before: datetime | None,
+    crud: CRUD,
+):
     return schemas.UserTextures(
         profileId=user.uuid,  # type: ignore
         profileName=user.name,  # type: ignore
@@ -42,19 +61,39 @@ def get_user_textures(
     )
 
 
-@router.get("/{user_id}/history", tags=["Texture uploads"])
 @router.get("/@me/history", tags=["Texture uploads"])
-def get_user_texture_history(
-    user_id: UUID | None = Path(None),
-    user: models.User = Depends(current_user),
+def get_current_user_texture_history(
+    user: models.User = Depends(require_user),
     limit: int | None = None,
     after: datetime | None = None,
     before: datetime | None = None,
     crud: CRUD = Depends(),
 ):
-    if user_id is not None:
-        user = crud.get_user_by_uuid(user_id)
+    return get_user_texture_history_by_uuid(user, limit, after, before, crud)
 
+
+@router.get("/{user_id}/history", tags=["Texture uploads"])
+def get_user_texture_history_by_uuid(
+    user_id: UUID,
+    limit: int | None = None,
+    after: datetime | None = None,
+    before: datetime | None = None,
+    crud: CRUD = Depends(),
+):
+    user = crud.get_user_by_uuid(user_id)
+    if user is None:
+        raise HTTPException(404)
+
+    return get_user_texture_history(user, limit, after, before, crud)
+
+
+def get_user_texture_history(
+    user: models.User,
+    limit: int | None,
+    after: datetime | None,
+    before: datetime | None,
+    crud: CRUD,
+):
     return schemas.UserTextureHistory(
         profileId=user.uuid,  # type: ignore
         profileName=user.name,  # type: ignore
@@ -67,15 +106,9 @@ def get_user_texture_history(
     )
 
 
-import httpx
-
-
 async def httpx_client():
     async with httpx.AsyncClient() as client:
         yield client
-
-
-from ...byteconv import mb
 
 
 @router.post("/@me", tags=["Texture uploads"])
@@ -147,7 +180,7 @@ def upload_skin(
     request: Request,
     user_id: UUID,
     type: str,
-    file: str,
+    file: AnyHttpUrl,
     user: models.User = Depends(require_user),
     crud: CRUD = Depends(),
 ):
@@ -161,4 +194,4 @@ def upload_skin(
     meta = dict(request.query_params)
     meta.pop("file")
     upload = schemas.TexturePost(type=type, file=file, meta=meta)
-    return upload_texture(upload, user, crud)
+    return post_texture(upload, user, crud)
