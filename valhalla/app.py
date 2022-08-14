@@ -1,7 +1,7 @@
 import sys
 
-from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, Request, Response
+from fastapi.responses import PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from raygun4py import raygunprovider
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,8 +41,9 @@ raygun = raygunprovider.RaygunSender(settings.raygun_apikey)
 
 
 @app.exception_handler(500)
-def report_raygun_errors(request: Request, exc: BaseException | None) -> None:
+def report_raygun_errors(request: Request, exc: BaseException | None) -> Response:
     raygun.send_exception(exc, sys.exc_info())
+    return PlainTextResponse("Internal Server Error", 500)
 
 
 @app.middleware("http")

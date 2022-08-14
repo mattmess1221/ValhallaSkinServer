@@ -2,13 +2,11 @@ import json
 import warnings
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .. import models
-from ..auth import current_user
 from ..config import Env, settings
 
 router = APIRouter(default_response_class=HTMLResponse, include_in_schema=False)
@@ -44,14 +42,5 @@ async def index(request: Request):
 
 
 @router.get("/dashboard")
-async def dashboard(
-    request: Request,
-    user: models.User = Depends(current_user),
-):
-    return templates.TemplateResponse(
-        "dashboard.html",
-        {
-            "request": request,
-            "user": user,
-        },
-    )
+async def dashboard(request: Request):
+    return templates.TemplateResponse("dashboard.html", {"request": request})

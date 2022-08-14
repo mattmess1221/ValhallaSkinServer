@@ -90,7 +90,7 @@ async def minecraft_login_callback(
         )
     )
 
-    user = crud.get_or_create_user(joined.id, joined.name, request.client.host)
+    user = await crud.get_or_create_user(joined.id, joined.name, request.client.host)
     token = auth.token_from_user(user, expire_in=timedelta(hours=1))
     auth_header = f"Bearer {token}"
 
@@ -125,7 +125,9 @@ async def xbox_login_callback(request: Request, crud: CRUD = Depends()):
     try:
         token = await xboxlive.authorize_access_token(request)
         profile = await xbox.login_with_xbox(token["access_token"])
-        user = crud.get_or_create_user(profile.id, profile.name, request.client.host)
+        user = await crud.get_or_create_user(
+            profile.id, profile.name, request.client.host
+        )
         expires = timedelta(days=365)
         token = auth.token_from_user(user, expire_in=expires)
 

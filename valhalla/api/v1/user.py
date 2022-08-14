@@ -161,7 +161,7 @@ async def upload_file(
     files: Files,
 ):
     texture_hash = image.gen_skin_hash(file)
-    upload = crud.get_upload(texture_hash)
+    upload = await crud.get_upload(texture_hash)
     if not upload:
         files.put_file(texture_hash, file)
         upload = await crud.put_upload(user, texture_hash)

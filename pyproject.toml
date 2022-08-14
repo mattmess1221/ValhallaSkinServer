@@ -33,6 +33,8 @@ black = "^22.6.0"
 flake8 = "^4.0.1"
 isort = "^5.10.1"
 pytest = "^7.1.2"
+pytest-cov = "^3.0.0"
+async-asgi-testclient = "^1.4.11"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -40,3 +42,16 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.isort]
 profile = "black"
+
+[tool.pytest.ini_options]
+addopts = "--cov --cov-report=xml --cov-report=term"
+
+[tool.coverage]
+exclude_lines = [
+    "pragma: no cover"
+]
+
+[tool.coverage.run]
+omit = [
+    ".vscode*"
+]

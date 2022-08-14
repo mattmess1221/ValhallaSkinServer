@@ -1,7 +1,6 @@
-import itertools
 from datetime import datetime
 from operator import attrgetter
-from typing import AsyncIterable, AsyncIterator, Callable, TypeVar, cast
+from typing import cast
 from uuid import UUID
 
 from fastapi import Depends
@@ -13,26 +12,7 @@ from sqlalchemy.sql import Select, and_, update
 
 from . import models
 from .db import get_db
-
-T = TypeVar("T")
-K = TypeVar("K")
-
-
-async def agroupby(
-    iterable: AsyncIterable[T], key: Callable[[T], K]
-) -> AsyncIterator[tuple[K, list[T]]]:
-    keyval = None
-    keylst = []
-    async for item in iterable:
-        if keyval is None:
-            keyval = key(item)
-        elif keyval != (keyval := key(item)):
-            yield keyval, keylst
-            keylst = []
-        keylst.append(item)
-
-    if keyval:
-        yield keyval, keylst
+from .util import agroupby, aislice, alist
 
 
 class CRUD:
@@ -74,7 +54,7 @@ class CRUD:
         )
 
         return [
-            (k, list(itertools.islice(v, limit)))
+            (k, await alist(aislice(v, limit)))
             async for k, v in agroupby(result, key=attrgetter("tex_type"))
         ]
 
@@ -96,6 +76,7 @@ class CRUD:
             user.address = address  # type: ignore
 
         await self.db.commit()
+        await self.db.refresh(user)
 
         return user
 
@@ -110,7 +91,7 @@ class CRUD:
     async def put_upload(self, user: models.User, texture_hash: str):
         upload = models.Upload(
             hash=texture_hash,
-            uploader=user,
+            user=user,
         )
         self.db.add(upload)
         return upload

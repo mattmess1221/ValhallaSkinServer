@@ -6,6 +6,7 @@ from fastapi import File, Form, UploadFile
 from pydantic import AnyHttpUrl, BaseModel, Field, root_validator
 
 from . import models
+from .util import camel_case
 
 
 class LoginMinecraftHandshakeResponse(BaseModel):
@@ -44,12 +45,6 @@ class UserTextures(BaseModel):
     profileId: UUID
     profileName: str
     textures: dict[str, Texture]
-
-
-def camel_case(s: str) -> str:
-    parts = s.split("_")
-    parts[1:] = [_.capitalize() for _ in parts[1:]]
-    return "".join(parts)
 
 
 class TextureHistoryEntry(BaseModel):

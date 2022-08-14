@@ -12,3 +12,7 @@ dist/
 node_modules/
 
 *.log*
+
+.coverage
+coverage.xml
+htmlcov
