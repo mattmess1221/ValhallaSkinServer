@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
+import anyio
 import httpx
 from fastapi import APIRouter, Depends, Request
 from fastapi.exceptions import HTTPException
@@ -160,10 +161,10 @@ async def upload_file(
     crud: CRUD,
     files: Files,
 ):
-    texture_hash = image.gen_skin_hash(file)
+    texture_hash = await anyio.to_thread.run_sync(image.gen_skin_hash, file)
     upload = await crud.get_upload(texture_hash)
     if not upload:
-        files.put_file(texture_hash, file)
+        await anyio.to_thread.run_sync(files.put_file, texture_hash, file)
         upload = await crud.put_upload(user, texture_hash)
 
     await crud.put_texture(user, texture_type, upload, meta)

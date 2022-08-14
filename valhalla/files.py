@@ -20,8 +20,6 @@ class Files:
     def put_file(self, skin_hash: str, file: bytes) -> None:
         """Save a texture to the file system"""
 
-        print(skin_hash)
-
         if not self.fs.exists(skin_hash):
             with self.fs.open(skin_hash, "wb") as f:
                 f.write(file)
