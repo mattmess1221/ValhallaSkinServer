@@ -4,8 +4,6 @@ import httpx
 from fastapi import HTTPException
 from pydantic import BaseModel
 
-from .xbox import XboxAuth
-
 # ?username=username&serverId=hash&ip=ip"
 _VALIDATE = "https://sessionserver.mojang.com/session/minecraft/hasJoined"
 

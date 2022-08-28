@@ -11,31 +11,21 @@ from ...config import settings
 from ...crud import CRUD
 from ...schemas import LoginMinecraftHandshakeResponse, LoginResponse
 
-router = APIRouter()
+router = APIRouter(tags=["Authentication"])
 
 
 # Validate tokens are kept 100 at a time for 30 seconds each
 validate_tokens: dict[str, str] = ExpiringDict(100, 30)
 
 
-@router.get("/logout")
+@router.get("/auth/logout", status_code=302)
 async def logout():
     response = RedirectResponse("/", status_code=302)
     response.delete_cookie("token")
     return response
 
 
-@router.post(
-    "/minecraft",
-    tags=["Authentication"],
-    response_model=LoginMinecraftHandshakeResponse,
-)
-@router.post(
-    "/handshake",
-    deprecated=True,
-    tags=["Authentication"],
-    response_model=LoginMinecraftHandshakeResponse,
-)
+@router.post("/auth/minecraft", response_model=LoginMinecraftHandshakeResponse)
 async def minecraft_login(
     request: Request, name: str = Form()
 ) -> LoginMinecraftHandshakeResponse:
@@ -52,15 +42,7 @@ async def minecraft_login(
     )
 
 
-@router.post(
-    "/minecraft/callback", tags=["Authentication"], response_model=LoginResponse
-)
-@router.post(
-    "/response",
-    deprecated=True,
-    tags=["Authentication"],
-    response_model=LoginResponse,
-)
+@router.post("/auth/minecraft/callback", response_model=LoginResponse)
 async def minecraft_login_callback(
     request: Request,
     response: Response,
@@ -111,14 +93,14 @@ xboxlive: StarletteOAuth2App = OAuth().register(
 )
 
 
-@router.api_route("/xbox", tags=["Authentication"])
+@router.api_route("/auth/xbox")
 async def xbox_login(request: Request):
     callback = request.url_for("xbox_login_callback")
     callback = callback.replace("http://127.0.0.1", "http://localhost")
     return await xboxlive.authorize_redirect(request, callback)
 
 
-@router.api_route("/xbox/callback", tags=["Authentication"])
+@router.api_route("/auth/xbox/callback")
 async def xbox_login_callback(request: Request, crud: CRUD = Depends()):
     if not request.client:
         raise HTTPException(400)

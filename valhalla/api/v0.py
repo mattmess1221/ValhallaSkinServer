@@ -1,56 +1,38 @@
-from uuid import UUID
+from fastapi import APIRouter, Depends
 
-from fastapi import APIRouter, Depends, Form, Request, Response
-from pydantic import BaseModel
-
-from .. import models
-from ..auth import require_user
-from ..crud import CRUD
-from ..schemas import LoginMinecraftHandshakeResponse, LoginResponse, UserTextures
 from . import v1
 
 router = APIRouter(include_in_schema=False)
 
 
-class Result(BaseModel):
-    message: str
+def message(msg: str):
+    async def view():
+        return {"message": msg}
+
+    return view
 
 
-@router.api_route("/user/{user_id}", response_model=UserTextures)
-def get_textures(user_id: UUID, crud: CRUD = Depends()):
-    return v1.user.get_user_textures(user_id, crud=crud)
-
-
-@router.api_route(
-    "/user/{user_id}/{type}", methods=["POST", "PUT", "DELETE"], response_model=Result
+router.add_api_route("/auth/handshake", v1.auth.minecraft_login, methods=["POST"])
+router.add_api_route(
+    "/auth/response", v1.auth.minecraft_login_callback, methods=["POST"]
 )
-def change_skin(
-    request: Request,
-    user_id: UUID,
-    type: str,
-    file: str,
-    user: models.User = Depends(require_user),
-    crud: CRUD = Depends(),
-):
-    v1.user.upload_skin(request, user_id, type, file, user, crud)
-    if request.method == "DELETE":
-        return Result(message="skin cleared")
-    return Result(message="OK")
+router.add_api_route("/user/{user_id}", v1.user.get_user_textures_by_uuid)
 
-
-@router.api_route(
-    "/auth/handshake", methods=["POST"], response_model=LoginMinecraftHandshakeResponse
+router.add_api_route(
+    "/user/{user_id}/{skin_type}",
+    message("OK"),
+    methods=["POST"],
+    dependencies=[Depends(v1.legacy.post_skin_old)],
 )
-async def auth_handshake(request: Request, name: str = Form()):
-    return await v1.auth.minecraft_login(request, name)
-
-
-@router.api_route("/auth/response", methods=["POST"], response_model=LoginResponse)
-def auth_response(
-    request: Request,
-    response: Response,
-    name: str,
-    verify_token: int = Form(alias="verifyToken"),
-    crud: CRUD = Depends(),
-):
-    return v1.auth.minecraft_login_callback(request, response, name, verify_token, crud)
+router.add_api_route(
+    "/user/{user_id}/{skin_type}",
+    message("OK"),
+    methods=["PUT"],
+    dependencies=[Depends(v1.legacy.put_skin_old)],
+)
+router.add_api_route(
+    "/user/{user_id}/{skin_type}",
+    message("skin cleared"),
+    methods=["DELETE"],
+    dependencies=[Depends(v1.legacy.delete_skin_old)],
+)

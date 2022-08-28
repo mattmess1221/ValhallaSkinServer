@@ -1,5 +1,6 @@
+from dataclasses import dataclass
 from typing import Callable, cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -63,3 +64,20 @@ def client(anyio_backend):
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
+
+
+@dataclass
+class TestUser:
+    uuid: UUID
+    name: str
+
+    __test__ = False
+
+    @property
+    def auth_header(self):
+        return {"authorization": f"{self.name}:{self.uuid}"}
+
+
+@pytest.fixture
+def user():
+    return TestUser(uuid4(), "TestUser")

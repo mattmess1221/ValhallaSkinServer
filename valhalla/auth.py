@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from fastapi import Cookie, Depends, HTTPException
 from fastapi.security import OAuth2
 from jose import JWTError, jwt
+from starlette import status
 
 from . import models
 from .config import settings
@@ -28,7 +29,7 @@ async def current_user(
 
 def require_user(user: models.User | None = Depends(current_user)) -> models.User:
     if user is None:
-        raise HTTPException(403)
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED)
     return user
 
 

@@ -1,5 +1,5 @@
+from collections import defaultdict
 from datetime import datetime
-from operator import attrgetter
 from typing import cast
 from uuid import UUID
 
@@ -12,7 +12,6 @@ from sqlalchemy.sql import Select, and_, update
 
 from . import models
 from .db import get_db
-from .util import agroupby, aislice, alist
 
 
 class CRUD:
@@ -36,27 +35,31 @@ class CRUD:
         user: models.User,
         *,
         limit: int | None = None,
-        after: datetime | None = None,
-        before: datetime | None = None,
-    ) -> list[tuple[str, list[models.Texture]]]:
+        at: datetime | None = None,
+    ) -> dict[str, list[models.Texture]]:
+        if at is None:
+            at = datetime.now()
         result: AsyncScalarResult = await self.db.stream_scalars(
             cast(Select, select(models.Texture))
             .options(selectinload(models.Texture.upload))
-            .where(
-                and_(
-                    models.Texture.user_id == user.id,
-                    *((models.Texture.start_time > after,) if after else ()),
-                    *((models.Texture.end_time < before) if before else ()),
-                )
-            )
-            .order_by(models.Texture.start_time.desc())
-            .limit(limit)
+            .where(models.Texture.user_id == user.id)
+            .order_by(models.Texture.tex_type, models.Texture.start_time.desc())
+            .group_by(models.Texture.tex_type)
         )
 
-        return [
-            (k, await alist(aislice(v, limit)))
-            async for k, v in agroupby(result, key=attrgetter("tex_type"))
-        ]
+        results: dict[str, list[models.Texture]] = defaultdict(list)
+        item: models.Texture
+        async for item in result:
+            tex_type = cast(str, item.tex_type)
+            start_time = cast(datetime, item.start_time)
+            end_time = cast(datetime, item.end_time)
+            if tex_type in results and len(results[tex_type]) == limit:
+                continue
+
+            if start_time < at and end_time is None or at < end_time:
+                results[tex_type].append(item)
+
+        return dict(results)
 
     async def get_or_create_user(
         self, uuid: UUID, name: str, address: str
@@ -100,8 +103,8 @@ class CRUD:
         self,
         user: models.User,
         tex_type: str,
-        upload: models.Upload,
-        meta: dict[str, str],
+        upload: models.Upload | None,
+        meta: dict[str, str] | None = None,
     ):
         await self.db.execute(
             update(
@@ -113,11 +116,13 @@ class CRUD:
                 values={models.Texture.end_time: datetime.now()},
             )
         )
-        self.db.add(
-            models.Texture(
-                user=user,
-                upload=upload,
-                tex_type=tex_type,
-                meta=meta,
+        if upload:
+            self.db.add(
+                models.Texture(
+                    user=user,
+                    upload=upload,
+                    tex_type=tex_type,
+                    meta=meta or {},
+                )
             )
-        )
+        await self.db.commit()

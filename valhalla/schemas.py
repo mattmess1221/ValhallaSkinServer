@@ -9,6 +9,10 @@ from . import models
 from .util import camel_case
 
 
+def serialize_uuid(u: UUID):
+    return str(u).replace("-", "")
+
+
 class LoginMinecraftHandshakeResponse(BaseModel):
     server_id: str = Field(alias="serverId")
     verify_token: int = Field(alias="verifyToken")
@@ -18,10 +22,10 @@ class LoginResponse(BaseModel):
     access_token: str = Field(alias="accessToken")
     user_id: UUID = Field(alias="userId")
 
-    def dict(self):
-        d = super().dict()
-        d["userId"] = d["userId"].replace("-", "")
-        return d
+    class Config:
+        json_encoders = {
+            UUID: serialize_uuid,
+        }
 
 
 class Texture(BaseModel):
@@ -74,10 +78,10 @@ class UserTextureHistory(BaseModel):
 class TextureUpload(BaseModel):
     type: str = Form()
     file: UploadFile = File(media_type="image/png")
-    meta: dict[str, str] = Form({})
+    meta: dict[str, str] | None = Form(None)
 
 
 class TexturePost(BaseModel):
     type: str
     file: AnyHttpUrl
-    meta: dict[str, str] = {}
+    meta: dict[str, str] | None = None

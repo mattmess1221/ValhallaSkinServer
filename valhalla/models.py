@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Callable
 
 import sqlalchemy as sa
 import sqlalchemy_utils as sau
