@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable, cast
 from uuid import UUID, uuid4
 
@@ -17,6 +18,8 @@ from ..config import Env, settings
 from ..crud import CRUD
 from ..database import Base
 from ..db import get_db_session
+
+assets = Path(__file__).parent / "assets"
 
 settings.env = Env.TESTING
 
