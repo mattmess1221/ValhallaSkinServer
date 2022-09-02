@@ -10,22 +10,22 @@
     "lint": "prettier -lw src && eslint src --ext js,ts,vue"
   },
   "dependencies": {
-    "@fontsource/roboto": "^4.5.7",
+    "@fontsource/roboto": "^4.5.8",
     "@trivago/prettier-plugin-sort-imports": "^3.3.0",
     "modern-normalize": "^1.1.0",
-    "vue": "^3.2.37"
+    "vue": "^3.2.38"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.31.0",
-    "@typescript-eslint/parser": "^5.31.0",
-    "@vitejs/plugin-vue": "^3.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.36.1",
+    "@typescript-eslint/parser": "^5.36.1",
+    "@vitejs/plugin-vue": "^3.0.3",
     "@vue/eslint-config-typescript": "^11.0.0",
-    "eslint": "^8.20.0",
-    "eslint-plugin-vue": "^9.3.0",
+    "eslint": "^8.23.0",
+    "eslint-plugin-vue": "^9.4.0",
     "prettier": "^2.7.1",
-    "sass": "^1.54.0",
-    "typescript": "^4.6.4",
-    "vite": "^3.0.0",
-    "vue-tsc": "^0.38.4"
+    "sass": "^1.54.8",
+    "typescript": "^4.8.2",
+    "vite": "^3.0.9",
+    "vue-tsc": "^0.38.9"
   }
 }
