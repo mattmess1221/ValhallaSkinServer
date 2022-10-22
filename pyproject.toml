@@ -15,7 +15,6 @@ dependencies = [
     "httpx<1.0.0,>=0.23.0",
     "itsdangerous<3.0.0,>=2.1.2",
     "Jinja2<4.0.0,>=3.1.2",
-    "passlib<2.0.0,>=1.7.2",
     "Pillow<10.0.0,>=9.2.0",
     "python-dotenv<1.0.0,>=0.20.0",
     "python-jose<4.0.0,>=3.3.0",

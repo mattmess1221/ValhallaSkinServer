@@ -11,19 +11,11 @@ from .database import Base
 
 
 @generic_repr
-class SecretSanity(Base):
-    __tablename__ = "secret_sanity"
-    id = sa.Column(sa.Integer, primary_key=True)
-    secret = sa.Column(sau.PasswordType(schemes=["pbkdf2_sha512"]), nullable=False)
-
-
-@generic_repr
 class User(Base):
     __tablename__ = "users"
     id = sa.Column(sa.Integer, primary_key=True)
     uuid = sa.Column(sau.UUIDType, unique=True, nullable=False)
     name = sa.Column(sa.String, nullable=False)
-    address = sa.Column(sau.IPAddressType, nullable=False)
 
     textures = relationship("Texture", back_populates="user")
 

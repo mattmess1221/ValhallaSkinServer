@@ -17,7 +17,7 @@ from ..auth import current_user
 from ..config import Env, settings
 from ..crud import CRUD
 from ..database import Base
-from ..db import get_db_session
+from ..db import get_db
 
 assets = Path(__file__).parent / "assets"
 
@@ -42,7 +42,7 @@ async def override_get_db():
         yield session
 
 
-app.dependency_overrides[get_db_session] = override_get_db
+app.dependency_overrides[get_db] = override_get_db
 
 
 async def override_current_user(
@@ -52,7 +52,7 @@ async def override_current_user(
     if authorization:
         uname, userid = authorization.split(":")
         userid = UUID(userid)
-        return await crud.get_or_create_user(userid, uname, "127.0.0.1")
+        return await crud.get_or_create_user(userid, uname)
     return None
 
 

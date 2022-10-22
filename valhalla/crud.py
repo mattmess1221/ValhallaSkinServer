@@ -61,22 +61,13 @@ class CRUD:
 
         return dict(results)
 
-    async def get_or_create_user(
-        self, uuid: UUID, name: str, address: str
-    ) -> models.User:
+    async def get_or_create_user(self, uuid: UUID, name: str) -> models.User:
         user = await self.get_user_by_uuid(uuid)
         if user is None:
-            user = models.User(
-                uuid=uuid,
-                name=name,
-                address=address,
-            )
+            user = models.User(uuid=uuid, name=name)
             self.db.add(user)
         elif user.name != name:
             user.name = name  # type: ignore
-            user.address = address  # type: ignore
-        else:
-            user.address = address  # type: ignore
 
         await self.db.commit()
         await self.db.refresh(user)
