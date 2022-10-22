@@ -5,7 +5,6 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [vue()],
   build: {
-    outDir: "../valhalla/dashboard/dist",
     manifest: true,
     emptyOutDir: true,
     rollupOptions: {

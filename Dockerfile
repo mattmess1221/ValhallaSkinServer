@@ -1,6 +1,8 @@
+ARG python_release=3.10
+
 # build the dashboard vite project
-FROM node:16-alpine AS dashboard
-WORKDIR /src/app/dashboard
+FROM node:16 AS dashboard
+WORKDIR /src/dashboard
 
 RUN npm install -g npm pnpm
 COPY dashboard/pnpm-lock.yaml .
@@ -8,42 +10,29 @@ RUN pnpm fetch
 COPY dashboard/ ./
 RUN pnpm install && pnpm build
 
-# base image for python layers
-FROM python:3.10-alpine AS python-base
-
-# some configuration.
-# python: auto-flush stdout
-# pip: disable cache, version checks, and root warnings
-ENV PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=no \
+FROM python:$python_release AS builder
+ENV PIP_NO_CACHE_DIR=no \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_ROOT_USER_ACTION=ignore
+    PIP_ROOT_USER_ACTION=ignore \
+    PDM_USE_VENV=no
 
-RUN pip install -q -U pip
+RUN pip install pdm
 
-# export the lock file to requirements to be used with pip
-FROM python-base AS poetry
+COPY pyproject.toml pdm.lock README.md /project/
+COPY /valhalla /project/valhalla
+COPY --from=dashboard /src/dashboard/dist /project/valhalla/dashboard/dist
 
-RUN pip install poetry
+WORKDIR /project
+RUN pdm install --prod -G prod --no-lock --no-editable
 
-WORKDIR /src/app
+FROM python:$python_release
+ARG python_release
+COPY --from=builder /project/__pypackages__ /project/__pypackages__
 
-COPY pyproject.toml poetry.lock ./
-RUN poetry export -o requirements.txt
-
-# the final layer, will run the server
-FROM python-base
-
-WORKDIR /src/app
-
-# copy over the requirements.txt and install it
-COPY --from=poetry /src/app/requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY valhalla valhalla
-COPY --from=dashboard /src/app .
+ENV PATH=$PATH:/project/__pypackages__/$python_release/bin \
+    PYTHONPATH=/project/__pypackages__/$python_release/lib
 
 # default port, heroku can override this
-ENV PORT=80
+ENV PORT=8080
 EXPOSE $PORT
 CMD gunicorn valhalla:app -k uvicorn.workers.UvicornWorker

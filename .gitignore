@@ -1,6 +1,6 @@
 __pycache__/
 *.pyc
-.mypy_cache/
+.pdm.toml
 
 *.db
 
@@ -15,4 +15,3 @@ node_modules/
 
 .coverage
 coverage.xml
-htmlcov
