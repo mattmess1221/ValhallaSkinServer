@@ -28,7 +28,6 @@ class Settings(BaseSettings):
 
     textures_fs: str = "file://./textures/"
 
-    raygun_apikey: str | None = None
     xbox_live_client_id: str | None = None
     xbox_live_client_secret: str | None = None
 
