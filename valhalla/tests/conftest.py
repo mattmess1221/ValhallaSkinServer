@@ -60,11 +60,11 @@ app.dependency_overrides[current_user] = override_current_user
 
 
 @pytest.fixture
-def client(anyio_backend):
+def client():
     return TestClient(app)
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def anyio_backend():
     return "asyncio"
 

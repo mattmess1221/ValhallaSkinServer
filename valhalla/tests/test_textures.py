@@ -27,7 +27,6 @@ def test_valid_images(path: Path):
     image_data = path.read_bytes()
 
     target_hash = None
-    print(hash_file)
     if hash_file.exists():
         target_hash = hash_file.read_text().strip()
 
