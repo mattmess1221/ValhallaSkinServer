@@ -37,8 +37,8 @@ async def minecraft_login(
     validate_tokens[verify_token] = name, request.client.host
 
     return LoginMinecraftHandshakeResponse(
-        serverId=settings.server_id,
-        verifyToken=verify_token,
+        server_id=settings.server_id,
+        verify_token=verify_token,
     )
 
 
@@ -79,8 +79,8 @@ async def minecraft_login_callback(
     response.headers["Authorization"] = token
 
     return LoginResponse(
-        accessToken=auth_header,
-        userId=user.uuid,  # type: ignore
+        access_token=auth_header,
+        user_id=user.uuid,  # type: ignore
     )
 
 

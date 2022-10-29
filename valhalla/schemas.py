@@ -3,29 +3,41 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import File, Form, UploadFile
-from pydantic import AnyHttpUrl, BaseModel, Field, root_validator
+from pydantic import AnyHttpUrl
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import Field, root_validator
+from pydantic.utils import to_lower_camel
 
 from . import models
-from .util import camel_case
 
 
 def serialize_uuid(u: UUID):
     return str(u).replace("-", "")
 
 
+def serialize_datetime(dt: datetime):
+    # convert to milliseconds
+    return int(dt.timestamp() * 1000)
+
+
+class BaseModel(PydanticBaseModel):
+    class Config:
+        alias_generator = to_lower_camel
+        allow_population_by_field_name = True
+        json_encoders = {
+            datetime: serialize_datetime,
+            UUID: serialize_uuid,
+        }
+
+
 class LoginMinecraftHandshakeResponse(BaseModel):
-    server_id: str = Field(alias="serverId")
-    verify_token: int = Field(alias="verifyToken")
+    server_id: str
+    verify_token: int
 
 
 class LoginResponse(BaseModel):
-    access_token: str = Field(alias="accessToken")
-    user_id: UUID = Field(alias="userId")
-
-    class Config:
-        json_encoders = {
-            UUID: serialize_uuid,
-        }
+    access_token: str
+    user_id: UUID
 
 
 class Texture(BaseModel):
@@ -46,20 +58,19 @@ class Texture(BaseModel):
 
 class UserTextures(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
-    profileId: UUID
-    profileName: str
+    profile_id: UUID
+    profile_name: str
     textures: dict[str, Texture]
 
 
 class TextureHistoryEntry(BaseModel):
     url: str
     meta: dict[str, str] = Field(default_factory=dict)
-    startTime: datetime
-    endTime: datetime | None
+    start_time: datetime
+    end_time: datetime | None
 
     @root_validator(pre=True)
     def validate_root(cls, values: dict[str, Any]):
-        values = {camel_case(k): v for k, v in values.items()}
         if "upload" in values and isinstance(values["upload"], models.Upload):
             upload = values.pop("upload")
             values["url"] = f"https://localhost/textures/{upload.hash}"
@@ -70,8 +81,8 @@ class TextureHistoryEntry(BaseModel):
 
 
 class UserTextureHistory(BaseModel):
-    profileId: UUID
-    profileName: str
+    profile_id: UUID
+    profile_name: str
     textures: dict[str, list[TextureHistoryEntry]] = {}
 
 

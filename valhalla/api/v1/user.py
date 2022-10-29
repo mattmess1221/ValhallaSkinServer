@@ -33,7 +33,7 @@ async def get_user_textures(
 ):
     textures = await crud.get_user_textures(user, limit=1, at=at)
     return schemas.UserTextures(
-        profileId=user.uuid,  # type: ignore
-        profileName=user.name,  # type: ignore
+        profile_id=user.uuid,  # type: ignore
+        profile_name=user.name,  # type: ignore
         textures={k: schemas.Texture.from_orm(v) for k, (v,) in textures.items()},
     )
