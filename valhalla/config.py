@@ -1,7 +1,7 @@
 import secrets
 from enum import Enum
 
-from pydantic import AnyHttpUrl, BaseSettings, Field
+from pydantic import BaseSettings, Field
 
 
 class Env(Enum):
@@ -17,8 +17,6 @@ class Env(Enum):
 class Settings(BaseSettings):
     env: Env = Env.PRODUCTION
     debug: bool = False
-
-    dashboard_dev_server: AnyHttpUrl = Field("http://localhost:5173")
 
     secret_key: str = "dev"
     database_url = "sqlite+aiosqlite:///./valhalla.db"
