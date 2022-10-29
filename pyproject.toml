@@ -1,7 +1,7 @@
 [project]
 name = "valhalla"
 version = "0.3.0"
-description = ""
+description = "An alternative skin server for Minecraft supporting metadata and hd textures"
 authors = [
     { name = "Matthew Messinger", email = "mattmess1221@gmail.com" },
 ]
@@ -27,16 +27,13 @@ requires-python = ">=3.10,<4.0"
 license = { text = "MIT" }
 
 [project.urls]
-
+repository = "https://github.com/killjoy1221/ValhallaSkinServer"
 
 [project.optional-dependencies]
 prod = [
     "asyncpg>=0.26.0",
     "gunicorn<21.0.0,>=20.1.0",
 ]
-
-[project.scripts]
-valhalla = "valhalla.cli:cli"
 
 [build-system]
 requires = ["pdm-pep517>=1.0.0"]
