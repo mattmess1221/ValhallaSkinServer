@@ -85,3 +85,11 @@ class TexturePost(BaseModel):
     type: str
     file: AnyHttpUrl
     meta: dict[str, str] | None = None
+
+
+class BulkRequest(BaseModel):
+    uuids: list[UUID]
+
+
+class BulkResponse(BaseModel):
+    users: list[UserTextures]

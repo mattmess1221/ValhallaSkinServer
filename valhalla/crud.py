@@ -1,4 +1,5 @@
 from collections import defaultdict
+from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import cast
 from uuid import UUID
@@ -29,6 +30,12 @@ class CRUD:
             cast(Select, select(models.User)).where(models.User.uuid == uuid).limit(1)
         )
         return result.one_or_none()
+
+    async def resolve_uuids(self, uuids: list[UUID]) -> AsyncIterator[models.User]:
+        for uid in uuids:
+            usr = await self.get_user_by_uuid(uid)
+            if usr:
+                yield usr
 
     async def get_user_textures(
         self,

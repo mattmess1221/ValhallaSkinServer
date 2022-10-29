@@ -84,3 +84,9 @@ class TestUser:
 @pytest.fixture
 def user():
     return TestUser(uuid4(), "TestUser")
+
+
+@pytest.fixture
+def users():
+    """Fixture to get a list of random users"""
+    return [TestUser(uuid4(), f"TestUser{n}") for n in range(1, 11)]
