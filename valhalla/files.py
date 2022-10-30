@@ -8,7 +8,6 @@ from .config import settings
 
 
 def get_filesystem() -> Iterator[FS]:
-    print("Opening", settings.textures_fs)
     with fs.open_fs(settings.textures_fs, writeable=True) as filesystem:
         yield filesystem
 

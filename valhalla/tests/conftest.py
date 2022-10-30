@@ -35,7 +35,7 @@ TestingSessionLocal = cast(
 
 
 async def override_get_db():
-    # session: AsyncSession
+    session: AsyncSession
     async with engine.begin() as session:
         await session.run_sync(Base.metadata.create_all)
     async with TestingSessionLocal() as session:
@@ -60,7 +60,8 @@ app.dependency_overrides[current_user] = override_current_user
 
 
 @pytest.fixture
-def client():
+def client(tmpdir: Path):
+    settings.textures_fs = f"file://{tmpdir}"
     return TestClient(app)
 
 
