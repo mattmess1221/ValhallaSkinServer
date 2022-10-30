@@ -74,7 +74,7 @@ class CRUD:
             user = models.User(uuid=uuid, name=name)
             self.db.add(user)
         elif user.name != name:
-            user.name = name  # type: ignore
+            user.name = name
 
         await self.db.commit()
         await self.db.refresh(user)

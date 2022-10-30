@@ -1,5 +1,6 @@
 import datetime
 import enum
+from typing import Any, Awaitable, Callable, TypeVar, overload
 from uuid import UUID
 
 import httpx
@@ -145,10 +146,67 @@ async def login_with_xbox(xbl_access_token: str) -> MinecraftProfile:
 
         async def login(xbl_access_token: str) -> MinecraftProfile:
             """Start the lengthy authorization process."""
-            response = await auth_xbl(xbl_access_token)
-            response = await auth_xsts(response)
-            response = await auth_minecraft_from_xbox(response)
-            response = await get_minecraft_profile(response)
-            return response
+            return await compose(
+                xbl_access_token,
+                auth_xbl,
+                auth_xsts,
+                auth_minecraft_from_xbox,
+                get_minecraft_profile,
+            )
 
         return await login(xbl_access_token)
+
+
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+T3 = TypeVar("T3")
+T4 = TypeVar("T4")
+T5 = TypeVar("T5")
+
+
+@overload
+async def compose(
+    payload: T1,
+    func1: Callable[[T1], Awaitable[T2]],
+    /,
+) -> T2:
+    ...
+
+
+@overload
+async def compose(
+    payload: T1,
+    func1: Callable[[T1], Awaitable[T2]],
+    func2: Callable[[T2], Awaitable[T3]],
+    /,
+) -> T3:
+    ...
+
+
+@overload
+async def compose(
+    payload: T1,
+    func1: Callable[[T1], Awaitable[T2]],
+    func2: Callable[[T2], Awaitable[T3]],
+    func3: Callable[[T3], Awaitable[T4]],
+    /,
+) -> T4:
+    ...
+
+
+@overload
+async def compose(
+    payload: T1,
+    func1: Callable[[T1], Awaitable[T2]],
+    func2: Callable[[T2], Awaitable[T3]],
+    func3: Callable[[T3], Awaitable[T4]],
+    func4: Callable[[T4], Awaitable[T5]],
+    /,
+) -> T5:
+    ...
+
+
+async def compose(payload: Any, *funcs: Callable[[Any], Awaitable[Any]]) -> Any:
+    for func in funcs:
+        payload = await func(payload)
+    return payload

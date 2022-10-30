@@ -15,7 +15,7 @@ router = APIRouter(tags=["Authentication"])
 
 
 # Validate tokens are kept 100 at a time for 30 seconds each
-validate_tokens: dict[str, str] = ExpiringDict(100, 30)
+validate_tokens: dict[int, tuple[str, str]] = ExpiringDict(100, 30)
 
 
 @router.get("/auth/logout", status_code=302)
@@ -72,7 +72,7 @@ async def minecraft_login_callback(
         )
     )
 
-    user = await crud.get_or_create_user(joined.id, joined.name, request.client.host)
+    user = await crud.get_or_create_user(joined.id, joined.name)
     token = auth.token_from_user(user, expire_in=timedelta(hours=1))
     auth_header = f"Bearer {token}"
 
@@ -90,7 +90,7 @@ xboxlive: StarletteOAuth2App = OAuth().register(
     client_secret=settings.xbox_live_client_secret,
     server_metadata_url=settings.xbox_live_server_metadata_url,
     client_kwargs=settings.xbox_live_client_kwargs,
-)
+)  # type: ignore
 
 
 @router.api_route("/auth/xbox")
@@ -107,9 +107,7 @@ async def xbox_login_callback(request: Request, crud: CRUD = Depends()):
     try:
         token = await xboxlive.authorize_access_token(request)
         profile = await xbox.login_with_xbox(token["access_token"])
-        user = await crud.get_or_create_user(
-            profile.id, profile.name, request.client.host
-        )
+        user = await crud.get_or_create_user(profile.id, profile.name)
         expires = timedelta(days=365)
         token = auth.token_from_user(user, expire_in=expires)
 

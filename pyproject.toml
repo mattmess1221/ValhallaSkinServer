@@ -58,13 +58,16 @@ lint = [
     "flake8~=5.0",
     "black~=22.10",
     "isort~=5.10",
+    "mypy>=0.982",
+]
+types = [
+    "types-aiofiles>=22.1.0",
+    "types-pillow>=9.2.2.2",
+    "types-python-jose>=3.3.4",
 ]
 
 [tool.isort]
 profile = "black"
-
-[tool.pytest.ini_options]
-addopts = "--cov --cov-report=xml --cov-report=term"
 
 [tool.coverage]
 exclude_lines = [
@@ -75,3 +78,15 @@ exclude_lines = [
 omit = [
     ".vscode*"
 ]
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = [
+    "async_asgi_testclient",
+    "authlib.*",
+    "expiringdict",
+    "jose",
+    "sqlalchemy.*",
+    "sqlalchemy_utils",
+]
+ignore_missing_imports = true

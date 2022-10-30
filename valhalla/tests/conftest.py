@@ -35,7 +35,7 @@ TestingSessionLocal = cast(
 
 
 async def override_get_db():
-    session: AsyncSession
+    # session: AsyncSession
     async with engine.begin() as session:
         await session.run_sync(Base.metadata.create_all)
     async with TestingSessionLocal() as session:
@@ -51,8 +51,8 @@ async def override_current_user(
 ):
     if authorization:
         uname, userid = authorization.split(":")
-        userid = UUID(userid)
-        return await crud.get_or_create_user(userid, uname)
+        uid = UUID(userid)
+        return await crud.get_or_create_user(uid, uname)
     return None
 
 

@@ -49,8 +49,8 @@ async def post_skin_old(
     Deprecated: Use the /textures endpoint to upload skins
     """
 
-    meta = dict(await request.form())
-    meta.pop("file")
+    form = await request.form()
+    meta = {k: v for k, v in form.items() if isinstance(v, str)}
     texture_data = schemas.TexturePost(type=skin_type, file=file, meta=meta)
     return await textures.post_texture(texture_data, user, crud, files)
 
@@ -70,8 +70,8 @@ async def put_skin_old(
     Deprecated: Use the /textures endpoint to upload skins
     """
 
-    meta = dict(await request.form())
-    meta.pop("file")
+    form = await request.form()
+    meta = {k: v for k, v in form.items() if isinstance(v, str)}
     return await textures.put_texture(
         skin_type, file, file_size, meta, user, crud, files
     )
