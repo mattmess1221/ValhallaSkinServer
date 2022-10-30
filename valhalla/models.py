@@ -1,17 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, cast
+from typing import cast
 from uuid import UUID
 
 import sqlalchemy as sa
 import sqlalchemy_utils as sau
 
 from .database import Base, C, R, SQLType, col, fk, pk, rel
-
-if TYPE_CHECKING:
-    from sqlalchemy.orm import RelationshipProperty as RP
-
 
 Integer = cast(type[SQLType[int]], sa.Integer)
 String = cast(type[SQLType[str]], sa.String)
@@ -38,7 +34,7 @@ class Upload(Base):
     user_id: C[int] = fk("users.id", nullable=False, default=None)
     upload_time: C[datetime] = col(DateTime, default=datetime.now, nullable=False)
 
-    user: R[User] = rel("User")
+    user: R[User] = rel("User", default=None)
 
 
 @sau.generic_repr

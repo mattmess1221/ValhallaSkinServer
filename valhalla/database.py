@@ -14,7 +14,7 @@ from typing import (
 from sqlalchemy import Column, ForeignKey, Integer, MetaData
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import RelationshipProperty, relationship, sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker
 
 from .config import settings
 
@@ -27,8 +27,8 @@ SessionLocal = cast(
 )
 
 T = TypeVar("T")
-B = TypeVar("B", covariant=True)
 Default = TypeVar("Default")
+B_co = TypeVar("B_co", covariant=True)
 T_co = TypeVar("T_co", covariant=True)
 
 
@@ -38,9 +38,9 @@ class SQLType(Protocol[T_co]):
         ...
 
 
-class BaseC(Protocol[B, T]):
+class BaseC(Protocol[B_co, T]):
     @overload
-    def __get__(self, instance: None, owner: type[Any]) -> B:
+    def __get__(self, instance: None, owner: type[Any]) -> B_co:
         ...
 
     @overload
@@ -75,14 +75,17 @@ def col(typ: type[SQLType[T]], *args, **kwargs) -> C[T]:
 
 
 def col(typ: type[SQLType[Any]], *args, **kwargs) -> C[Any]:
+    """Column"""
     return Column(typ, *args, **kwargs)  # type: ignore
 
 
 def rel(*args, default: str | None = None, **kwargs) -> R:
+    """relationship"""
     return relationship(*args, **kwargs)
 
 
 def pk(*, default: None, **kwargs) -> C[int]:
+    """Primary key"""
     return Column(Integer, primary_key=True, **kwargs)  # type: ignore
 
 
@@ -97,6 +100,7 @@ def fk(ref: str, *, nullable: Literal[False], default: None, **kwargs) -> C[int]
 
 
 def fk(ref: str, **kwargs) -> Any:
+    """Foreign key"""
     return Column(Integer, ForeignKey(ref), **kwargs)
 
 
