@@ -1,7 +1,7 @@
 import secrets
 from enum import Enum
 
-from pydantic import BaseSettings, Field
+from pydantic import AnyHttpUrl, BaseSettings, Field
 
 
 class Env(Enum):
@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     server_id: str = Field(default_factory=secrets.token_urlsafe)
 
     textures_fs: str = "file://./textures/"
+    textures_url: AnyHttpUrl | None = None
 
     xbox_live_client_id: str | None = None
     xbox_live_client_secret: str | None = None

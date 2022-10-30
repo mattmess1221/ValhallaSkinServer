@@ -3,9 +3,10 @@ from pathlib import Path
 
 import pytest
 
+from ..config import settings
 from .conftest import TestClient, TestUser, assets
 
-textures_url = "https://localhost/textures/"
+textures_url = "http://localhost/textures/"
 steve_file = assets / "good/64x64.png"
 steve_url = "http://assets.mojang.com/SkinTemplates/steve.png"
 steve_hash = textures_url + steve_file.with_suffix(".txt").read_text().strip()
@@ -92,3 +93,7 @@ async def test_very_large_upload(client: TestClient, user: TestUser):
         files={"type": "skin", "file": ("file.txt", BytesIO(ten_megabytes_of_zeros))},
     )
     assert resp.status_code == 413  # Request entity too large
+
+
+def test_env():
+    assert not settings.env.isprod

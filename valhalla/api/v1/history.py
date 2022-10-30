@@ -1,7 +1,10 @@
 from datetime import datetime
+from urllib.parse import urljoin
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+
+from valhalla.api.v1.utils import get_textures_url
 
 from ... import models, schemas
 from ...auth import require_user
@@ -16,8 +19,9 @@ async def get_current_user_texture_history(
     limit: int | None = None,
     at: datetime | None = None,
     crud: CRUD = Depends(),
+    textures_url: str = Depends(get_textures_url),
 ):
-    return await get_user_texture_history(user, limit, at, crud)
+    return await get_user_texture_history(user, limit, at, crud, textures_url)
 
 
 @router.get("/history/{user_id}")
@@ -26,12 +30,13 @@ async def get_user_texture_history_by_uuid(
     limit: int | None = None,
     at: datetime | None = None,
     crud: CRUD = Depends(),
+    textures_url: str = Depends(get_textures_url),
 ):
     user = await crud.get_user_by_uuid(user_id)
     if user is None:
         raise HTTPException(404)
 
-    return await get_user_texture_history(user, limit, at, crud)
+    return await get_user_texture_history(user, limit, at, crud, textures_url)
 
 
 async def get_user_texture_history(
@@ -39,13 +44,22 @@ async def get_user_texture_history(
     limit: int | None,
     at: datetime | None,
     crud: CRUD,
+    textures_url: str,
 ):
     textures = await crud.get_user_textures(user, limit=limit, at=at)
     return schemas.UserTextureHistory(
         profile_id=user.uuid,  # type: ignore
         profile_name=user.name,  # type: ignore
         textures={
-            key: [schemas.TextureHistoryEntry.from_orm(entry) for entry in value]
+            key: [
+                schemas.TextureHistoryEntry(
+                    url=urljoin(textures_url, entry.upload.hash),
+                    meta=entry.meta,
+                    start_time=entry.start_time,
+                    end_time=entry.end_time,
+                )
+                for entry in value
+            ]
             for key, value in textures.items()
         },
     )

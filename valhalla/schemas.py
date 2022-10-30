@@ -1,14 +1,11 @@
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
 from fastapi import File, Form, UploadFile
 from pydantic import AnyHttpUrl
 from pydantic import BaseModel as PydanticBaseModel
-from pydantic import Field, root_validator
+from pydantic import Field
 from pydantic.utils import to_lower_camel
-
-from . import models
 
 
 def serialize_uuid(u: UUID):
@@ -44,17 +41,6 @@ class Texture(BaseModel):
     url: str
     meta: dict[str, str] | None = None
 
-    @root_validator(pre=True)
-    def validate_root(cls, values: dict[str, Any]):
-        values = dict(values)
-        if "upload" in values and isinstance(values["upload"], models.Upload):
-            upload = values.pop("upload")
-            values["url"] = f"https://localhost/textures/{upload.hash}"
-        return values
-
-    class Config:
-        orm_mode = True
-
 
 class UserTextures(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
@@ -65,19 +51,9 @@ class UserTextures(BaseModel):
 
 class TextureHistoryEntry(BaseModel):
     url: str
-    meta: dict[str, str] = Field(default_factory=dict)
+    meta: dict[str, str] | None = None
     start_time: datetime
     end_time: datetime | None
-
-    @root_validator(pre=True)
-    def validate_root(cls, values: dict[str, Any]):
-        if "upload" in values and isinstance(values["upload"], models.Upload):
-            upload = values.pop("upload")
-            values["url"] = f"https://localhost/textures/{upload.hash}"
-        return values
-
-    class Config:
-        orm_mode = True
 
 
 class UserTextureHistory(BaseModel):

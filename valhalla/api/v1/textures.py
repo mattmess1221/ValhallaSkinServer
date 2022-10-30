@@ -12,6 +12,8 @@ from ...auth import require_user
 from ...byteconv import mb
 from ...crud import CRUD
 from ...files import Files
+from .user import get_user_textures
+from .utils import get_textures_url
 
 router = APIRouter(tags=["Texture Uploads"])
 
@@ -22,9 +24,10 @@ max_upload_size = 5 * mb
 async def get_texture(
     user: models.User = Depends(require_user),
     crud: CRUD = Depends(),
+    textures_url: str = Depends(get_textures_url),
 ):
-    textures = await crud.get_user_textures(user, limit=1)
-    return {k: schemas.Texture.from_orm(v) for k, (v,) in textures.items()}
+    user_texts = await get_user_textures(user, None, crud, textures_url)
+    return user_texts.textures
 
 
 async def download_file(url: str, max_size: int) -> bytes:
