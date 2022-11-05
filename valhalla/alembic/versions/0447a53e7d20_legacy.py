@@ -37,9 +37,9 @@ def fix_passlib():
         pip_install("passlib")
         import passlib
         from passlib.context import LazyCryptContext
+
         sau.types.password.LazyCryptContext = LazyCryptContext
         sau.types.password.passlib = passlib
-
 
 
 def upgrade() -> None:

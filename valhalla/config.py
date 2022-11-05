@@ -1,12 +1,23 @@
 import secrets
 from enum import Enum
+from urllib.parse import urlparse
 
 from pydantic import AnyHttpUrl, BaseSettings, Field
 
 async_sql_drivers = {
-    "sqlite": "aiosqlite",
-    "postgres": "asyncpg",
+    "sqlite": "sqlite+aiosqlite",
+    "postgres": "postgresql+asyncpg",
 }
+
+
+def resolve_db(url: str):
+    url_parts = urlparse(url)
+    if url_parts.scheme in async_sql_drivers:
+        url_parts = url_parts._replace(scheme=async_sql_drivers[url_parts.scheme])
+    url = url_parts.geturl()
+    if not url_parts.netloc:
+        url = url.replace(":/", ":///")
+    return url
 
 
 class Env(Enum):
@@ -41,12 +52,7 @@ class Settings(BaseSettings):
     xbox_live_client_kwargs: dict = {"scope": "XboxLive.signin offline_access"}
 
     def get_database_url(self) -> str:
-        db_url = self.database_url
-        for db, driver in async_sql_drivers.items():
-            if db_url.startswith(f"{db}://"):
-                db_url = db_url.replace(f"{db}://", f"{db}+{driver}://")
-                break
-        return db_url
+        return resolve_db(self.database_url)
 
     class Config:
         env_file = ".env"
