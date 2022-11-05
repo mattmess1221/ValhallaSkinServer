@@ -18,7 +18,7 @@ from sqlalchemy.orm import relationship, sessionmaker
 
 from .config import settings
 
-engine = create_async_engine(settings.database_url)
+engine = create_async_engine(settings.get_database_url())
 SessionLocal = cast(
     Callable[[], AsyncSession],
     sessionmaker(
