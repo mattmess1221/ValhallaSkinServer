@@ -51,7 +51,7 @@ class CRUD:
             .options(selectinload(models.Texture.upload))
             .where(models.Texture.user_id == user.id)
             .order_by(models.Texture.tex_type, models.Texture.start_time.desc())
-            .group_by(models.Texture.tex_type)
+            .group_by(models.Texture.tex_type, models.Texture.id)
         )
 
         results: dict[str, list[models.Texture]] = defaultdict(list)
