@@ -19,14 +19,16 @@ FROM python-base
 WORKDIR /project
 
 COPY --from=builder /project/__pypackages__/3.10 /project
+COPY alembic.ini /project/etc/valhalla/alembic.ini
 
 ENV PATH=$PATH:/project/bin \
     PYTHONPATH=/project/lib
 
-ENV PATH=$PATH:/project/__pypackages__/$python_release/bin \
-    PYTHONPATH=/project/__pypackages__/$python_release/lib
+ENV ALEMBIC_CONFIG=/project/etc/valhalla/alembic.ini
 
 # default port, heroku can override this
 ENV PORT=8080
 EXPOSE $PORT
-CMD gunicorn valhalla:app -k uvicorn.workers.UvicornWorker
+CMD alembic upgrade head && \
+    gunicorn valhalla:app -k uvicorn.workers.UvicornWorker
+
