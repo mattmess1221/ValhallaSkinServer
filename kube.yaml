@@ -8,8 +8,8 @@ kind: ConfigMap
 metadata:
   name: postgresql-config
 data:
+  POSTGRES_HOST_AUTH_METHOD: trust
   POSTGRES_USER: valhalla
-  POSTGRES_PASSWORD: password123
   POSTGRES_DB: valhalla
 
 ---
@@ -19,7 +19,7 @@ metadata:
   name: valhalla-config
 data:
   SECRET_KEY: changeme
-  DATABASE_URL: postgresql+asyncpg://valhalla:password123@valhalla-database/valhalla
+  DATABASE_URL: postgresql+asyncpg://valhalla@valhalla-database/valhalla
   PORT: "8080"
 
 ---
@@ -33,11 +33,19 @@ spec:
   containers:
     - name: database
       image: docker.io/postgres
+      volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        - name: postgres-sock
+          mountPath: /var/run/postgresql
       envFrom:
         - configMapRef:
             name: postgresql-config
     - name: api
       image: localhost/valhalla
+      volumeMounts:
+        - name: postgres-sock
+          mountPath: /var/run/postgresql
       envFrom:
         - configMapRef:
             name: valhalla-config
@@ -45,3 +53,15 @@ spec:
         - protocol: TCP
           containerPort: 8080
           hostPort: 8080
+  volumes:
+    - name: postgres-data
+      persistentVolumeClaim:
+        claimName: postgres-data
+    - name: postgres-sock
+      emptyDir: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
