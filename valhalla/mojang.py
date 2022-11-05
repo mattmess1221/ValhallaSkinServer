@@ -1,16 +1,32 @@
-import requests
+from uuid import UUID
+
+import httpx
+from fastapi import HTTPException
+
+from .schemas import BaseModel
 
 # ?username=username&serverId=hash&ip=ip"
 _VALIDATE = "https://sessionserver.mojang.com/session/minecraft/hasJoined"
 
 
-def has_joined(name: str, server_hash: str, address: str) -> requests.Response:
+class HasJoinedRequest(BaseModel):
+    username: str
+    server_id: str
+    ip: str
+
+
+class HasJoinedResponse(BaseModel):
+    id: UUID
+    name: str
+
+
+async def has_joined(params: HasJoinedRequest) -> HasJoinedResponse:
     """Validates a login against Mojang's servers
 
     http://wiki.vg/Protocol_Encryption#Authentication
     """
-    return requests.get(_VALIDATE, params={
-        "username": name,
-        "serverId": server_hash,
-        "ip": address
-    })  # 204 means success, but 403 means fail
+    async with httpx.AsyncClient() as client:
+        response = await client.get(_VALIDATE, params=params.dict())
+        if response.is_success:
+            return HasJoinedResponse.parse_obj(response.json())
+        raise HTTPException(401)

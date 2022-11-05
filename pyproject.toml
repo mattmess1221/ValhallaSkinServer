@@ -1,30 +1,98 @@
-[tool.poetry]
+[project]
 name = "valhalla"
-version = "0.1.0"
-description = ""
-authors = ["Matthew Messinger <mattmess1221@gmail.com>"]
+version = "0.3.0"
+description = "An alternative skin server for Minecraft supporting metadata and hd textures"
+authors = [
+    { name = "Matthew Messinger", email = "mattmess1221@gmail.com" },
+]
+dependencies = [
+    "aiofiles~=22.1",
+    "alembic~=1.8",
+    "authlib~=1.1",
+    "expiringdict~=1.2",
+    "fastapi~=0.85",
+    "fs~=2.4",
+    "fs-s3fs~=1.1",
+    "httpx~=0.23",
+    "itsdangerous~=2.1",
+    "pillow~=9.3",
+    "python-dotenv~=0.21",
+    "python-jose~=3.3",
+    "python-multipart~=0.0",
+    "sqlalchemy~=1.4",
+    "sqlalchemy-utils~=0.38",
+    "uvicorn~=0.19",
+]
+requires-python = ">=3.10,<4.0"
+license = { text = "MIT" }
 
-[tool.poetry.dependencies]
-python = "^3.7"
-requests = "^2.23.0"
-flask = "^1.1.2"
-expiringdict = "^1.2.0"
-pillow = "^7.1.1"
-fs = "^2.4.11"
-flask-sqlalchemy = "^2.4.1"
-flask-restx = "^0.2.0"
-flask-httpauth = "^3.3.0"
-sqlalchemy-utils = "^0.36.3"
-flask-cdn = "^1.5.3"
-psycopg2-binary = "^2.8.5"
-gunicorn = "^20.0.4"
-fs-s3fs = "^1.1.1"
-passlib = "^1.7.2"
-raygun4py = "^4.3.0"
-python-dotenv = "^0.12.0"
+[project.urls]
+repository = "https://github.com/killjoy1221/ValhallaSkinServer"
 
-[tool.poetry.dev-dependencies]
+[project.optional-dependencies]
+prod = [
+    "asyncpg~=0.27",
+    "gunicorn~=20.1",
+]
 
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"
+
+[tool.pdm]
+[tool.pdm.scripts]
+dev.cmd = "uvicorn valhalla.app:app --reload"
+dev.env = { ENV = "dev", DEBUG = "1" }
+cov = "pytest --cov --cov-report=xml --cov-report=term --cov-fail-under=80"
+
+[tool.pdm.dev-dependencies]
+test = [
+    "pytest~=7.2",
+    "pytest-cov~=4.0",
+    "async-asgi-testclient~=1.4",
+]
+dev = [
+    "pre-commit~=2.20",
+    "aiosqlite~=0.17",
+]
+lint = [
+    "flake8~=5.0",
+    "black~=22.10",
+    "isort~=5.10",
+    "mypy>=0.982",
+]
+types = [
+    "types-aiofiles>=22.1.0",
+    "types-pillow>=9.2.2.2",
+    "types-python-jose>=3.3.4",
+]
+
+[tool.isort]
+profile = "black"
+
+[tool.coverage]
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "@overload",
+    "class .*Protocol"
+]
+
+[tool.coverage.run]
+omit = [
+    ".vscode*"
+]
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = [
+    "async_asgi_testclient",
+    "authlib.*",
+    "expiringdict",
+    "jose",
+    "sqlalchemy.*",
+    "sqlalchemy_utils",
+]
+ignore_missing_imports = true

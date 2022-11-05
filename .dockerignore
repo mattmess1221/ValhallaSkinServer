@@ -1,5 +1,8 @@
 **/*.pyc
-valhalla/textures/
+**/__pycache__/
 **/*.db
 .*
-*.egg-info/
+
+**/node_modules
+**/dist
+**/.*

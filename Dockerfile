@@ -1,25 +1,34 @@
-FROM python:3.7
+FROM python:3.10 AS python-base
+ENV PIP_NO_CACHE_DIR=no \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_ROOT_USER_ACTION=ignore \
+    PDM_USE_VENV=no
 
-ARG YOUR_ENV
+FROM python-base AS builder
 
-ENV YOUR_ENV=${YOUR_ENV} \
-  PYTHONFAULTHANDLER=1 \
-  PYTHONUNBUFFERED=1 \
-  PYTHONHASHSEED=random \
-  PIP_NO_CACHE_DIR=off \
-  PIP_DISABLE_PIP_VERSION_CHECK=on \
-  PIP_DEFAULT_TIMEOUT=100 \
-  POETRY_VERSION=1.0.5
+RUN pip install pdm
 
-RUN pip install "poetry==$POETRY_VERSION"
+COPY pyproject.toml pdm.lock README.md /project/
+COPY /valhalla /project/valhalla
 
-WORKDIR /src/app
-COPY poetry.lock pyproject.toml /src/app/
+WORKDIR /project
+RUN pdm install --prod -G prod --no-lock --no-editable
 
-RUN poetry config virtualenvs.create false && \
-    poetry install --no-interaction --no-ansi
+FROM python-base
 
-COPY . /src/app
+WORKDIR /project
 
-ENV PORT=5000
-CMD [ "gunicorn", "wsgi" ]
+COPY --from=builder /project/__pypackages__/3.10 /project
+COPY alembic.ini /project/etc/valhalla/alembic.ini
+
+ENV PATH=$PATH:/project/bin \
+    PYTHONPATH=/project/lib
+
+ENV ALEMBIC_CONFIG=/project/etc/valhalla/alembic.ini
+
+# default port, heroku can override this
+ENV PORT=8080
+EXPOSE $PORT
+CMD alembic upgrade head && \
+    gunicorn valhalla:app -k uvicorn.workers.UvicornWorker
+

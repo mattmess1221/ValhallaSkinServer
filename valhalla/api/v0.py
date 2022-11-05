@@ -1,26 +1,38 @@
-from flask import Blueprint, request, current_app
+from fastapi import APIRouter, Depends
 
-apiv0 = Blueprint("api_v0", __name__)
+from . import v1
 
-
-@apiv0.route('/user/<user:user>')
-def get_textures(**kwargs):
-    return current_app.view_functions['api_v1.user_resource'](**kwargs)
+router = APIRouter(include_in_schema=False)
 
 
-@apiv0.route('/user/<user:user>/<skin_type>', methods=['POST', 'PUT', 'DELETE'])
-def change_skin(**kwargs):
-    current_app.view_functions['api_v1.texture_resource'](**kwargs)
-    if request.method == 'DELETE':
-        return dict(message='skin cleared')
-    return dict(message="OK")
+def message(msg: str):
+    async def view():
+        return {"message": msg}
+
+    return view
 
 
-@apiv0.route('/auth/handshake', methods=["POST"])
-def auth_handshake(**kwargs):
-    return current_app.view_functions['api_v1.auth_handshake_resource'](**kwargs)
+router.add_api_route("/auth/handshake", v1.auth.minecraft_login, methods=["POST"])
+router.add_api_route(
+    "/auth/response", v1.auth.minecraft_login_callback, methods=["POST"]
+)
+router.add_api_route("/user/{user_id}", v1.user.get_user_textures_by_uuid)
 
-
-@apiv0.route('/auth/response', methods=['POST'])
-def auth_response(**kwargs):
-    return current_app.view_functions['api_v1.auth_response_resource'](**kwargs)
+router.add_api_route(
+    "/user/{user_id}/{skin_type}",
+    message("OK"),
+    methods=["POST"],
+    dependencies=[Depends(v1.legacy.post_skin_old)],
+)
+router.add_api_route(
+    "/user/{user_id}/{skin_type}",
+    message("OK"),
+    methods=["PUT"],
+    dependencies=[Depends(v1.legacy.put_skin_old)],
+)
+router.add_api_route(
+    "/user/{user_id}/{skin_type}",
+    message("skin cleared"),
+    methods=["DELETE"],
+    dependencies=[Depends(v1.legacy.delete_skin_old)],
+)

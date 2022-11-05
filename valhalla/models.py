@@ -1,72 +1,54 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List
+from typing import cast
+from uuid import UUID
 
 import sqlalchemy as sa
 import sqlalchemy_utils as sau
-from flask import request
-from flask_cdn import url_for
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import relationship
-from sqlalchemy_utils import generic_repr
 
-__all__ = [
-    "db",
-    'SecretSanity',
-    "User",
-    "Upload",
-    "Texture"
-]
+from .database import Base, C, R, SQLType, col, fk, pk, rel
 
-db = SQLAlchemy()
+Integer = cast(type[SQLType[int]], sa.Integer)
+String = cast(type[SQLType[str]], sa.String)
+DateTime = cast(type[SQLType[datetime]], sa.DateTime)
+JSON = cast(type[SQLType[dict[str, str]]], sa.JSON)
+UUIDType = cast(type[SQLType[UUID]], sau.UUIDType)
 
 
-@generic_repr
-class SecretSanity(db.Model):
-    id = sa.Column(sa.Integer, primary_key=True)
-    secret = sa.Column(sau.PasswordType(schemes=['pbkdf2_sha512']), nullable=False)
+@sau.generic_repr
+class User(Base):
+    __tablename__ = "users"
+    id: C[int] = pk(default=None)
+    uuid: C[UUID] = col(UUIDType, unique=True, nullable=False)
+    name: C[str] = col(String, nullable=False)
+
+    textures: R[list[Texture]] = rel("Texture", back_populates="user", default=None)
 
 
-@generic_repr
-class User(db.Model):
-    __tablename__ = 'users'
-    id = sa.Column(sa.Integer, primary_key=True)
-    uuid = sa.Column(sau.UUIDType, unique=True, nullable=False)
-    name = sa.Column(sa.String, nullable=False)
-    address = sa.Column(sau.IPAddressType, nullable=False,
-                        default=lambda: request.remote_addr,
-                        onupdate=lambda: request.remote_addr)
+@sau.generic_repr
+class Upload(Base):
+    __tablename__ = "uploads"
+    id: C[int] = pk(default=None)
+    hash: C[str] = col(String, nullable=False, unique=True)
+    user_id: C[int] = fk("users.id", nullable=False, default=None)
+    upload_time: C[datetime] = col(DateTime, default=datetime.now, nullable=False)
 
-    textures: List[Texture] = relationship("Texture", back_populates="user")
+    user: R[User] = rel("User", default=None)
 
 
-@generic_repr
-class Upload(db.Model):
-    __tablename__ = 'uploads'
-    id = sa.Column(sa.Integer, primary_key=True)
-    hash = sa.Column(sa.String, nullable=False, unique=True)
-    user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id"), nullable=False)
-    upload_time = sa.Column(sa.DateTime, default=datetime.now, nullable=False)
+@sau.generic_repr
+class Texture(Base):
+    __tablename__ = "textures"
 
-    user: User = relationship('User')
+    id: C[int] = pk(default=None)
+    user_id: C[int] = fk("users.id", nullable=False, default=None)
+    upload_id: C[int] = fk("uploads.id", nullable=False, default=None)
+    tex_type: C[str] = col(String, nullable=False)
+    meta: C[dict[str, str]] = col(JSON, default=dict)
 
+    start_time: C[datetime] = col(DateTime, default=datetime.now, nullable=False)
+    end_time: C[datetime | None] = col(DateTime, default=None)
 
-@generic_repr
-class Texture(db.Model):
-    __tablename__ = 'textures'
-
-    id = sa.Column(sa.Integer, primary_key=True)
-    user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id"), nullable=False)
-    upload_id = sa.Column(sa.Integer, sa.ForeignKey("uploads.id"))
-    tex_type = sa.Column(sa.String, nullable=False)
-    meta = sa.Column(sa.JSON, default=dict)
-
-    user: User = relationship("User", back_populates="textures")
-    upload: Upload = relationship("Upload")
-
-    def todict(self):
-        return {
-            'url': url_for('textures', filename=self.upload.hash, _external=True),
-            'metadata': self.meta
-        }
+    user: R[User] = rel("User", default=None, back_populates="textures")
+    upload: R[Upload] = rel("Upload", default=None)
