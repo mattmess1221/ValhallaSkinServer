@@ -55,7 +55,7 @@ class Settings(BaseSettings):
         return resolve_db(self.database_url)
 
     def get_textures_url(self) -> str | None:
-        url = self.textures_url
+        url: str | None = self.textures_url
         if url and not url.endswith("/"):
             url += "/"
         return url

@@ -60,12 +60,13 @@ lint = [
     "flake8~=5.0",
     "black~=22.10",
     "isort~=5.10",
-    "mypy>=0.982",
 ]
 types = [
+    "mypy>=0.982",
     "types-aiofiles>=22.1.0",
     "types-pillow>=9.2.2.2",
     "types-python-jose>=3.3.4",
+    "types-passlib>=1.7.7",
 ]
 
 [tool.isort]
@@ -88,13 +89,11 @@ omit = [
 ]
 
 [tool.mypy]
-[[tool.mypy.overrides]]
-module = [
-    "async_asgi_testclient",
-    "authlib.*",
-    "expiringdict",
-    "jose",
-    "sqlalchemy.*",
-    "sqlalchemy_utils",
+plugins = [
+    "pydantic.mypy",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "valhalla.crud"
+ignore_errors = true

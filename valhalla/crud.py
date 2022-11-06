@@ -1,3 +1,6 @@
+# sqlalchemy isn't 100% with type checking, so disable it in pyright
+# mypy has it disabled in pyproject.toml
+# pyright: reportGeneralTypeIssues=false
 from collections import defaultdict
 from collections.abc import AsyncIterator
 from datetime import datetime

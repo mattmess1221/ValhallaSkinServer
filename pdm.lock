@@ -630,6 +630,11 @@ version = "22.1.0"
 summary = "Typing stubs for aiofiles"
 
 [[package]]
+name = "types-passlib"
+version = "1.7.7"
+summary = "Typing stubs for passlib"
+
+[[package]]
 name = "types-pillow"
 version = "9.2.2.2"
 summary = "Typing stubs for Pillow"
@@ -674,7 +679,7 @@ dependencies = [
 
 [metadata]
 lock_version = "4.0"
-content_hash = "sha256:f7f3a43cd24da762b9ace772a1ff563eadd203e3cbe2b12307680c6ca042ff29"
+content_hash = "sha256:dbb13e68831239f71e90e36a27b9e463552883d8985193a89ffd1ded0a3eb150"
 
 [metadata.files]
 "aiofiles 22.1.0" = [
@@ -1528,6 +1533,10 @@ content_hash = "sha256:f7f3a43cd24da762b9ace772a1ff563eadd203e3cbe2b12307680c6ca
 "types-aiofiles 22.1.0" = [
     {url = "https://files.pythonhosted.org/packages/36/f2/446ee46fdfc46e0780dc5ead99ca07cfe3b73265ac22b7ebafb43bbc368e/types_aiofiles-22.1.0-py3-none-any.whl", hash = "sha256:460c3b1c7fa24ec5f2c7d46cf3a849f07c7007a57fc19884be17e5159351fc39"},
     {url = "https://files.pythonhosted.org/packages/b1/72/dd05faeb1344f676adfaffaf98b262571212c3ca1c648498824e39f8703a/types-aiofiles-22.1.0.tar.gz", hash = "sha256:8ae2e1d2f99b62754cffe6a8761fd6eeb8a0675569dc73818248e5bc30cb9074"},
+]
+"types-passlib 1.7.7" = [
+    {url = "https://files.pythonhosted.org/packages/30/a4/a4448bc606e9dc397543abd0dabe27bac65d47969b08794e365422be1df5/types_passlib-1.7.7-py3-none-any.whl", hash = "sha256:49fae3bb06f444fd452df1b1cdb584d592cf4086f4ece38166aa47efc95cff5a"},
+    {url = "https://files.pythonhosted.org/packages/42/bd/634c2ad826e771ed944c36980b5935fde60b020db7d586895b1f6fc2c9cf/types-passlib-1.7.7.tar.gz", hash = "sha256:3a5f7e8cbe563ce71717a0fd92e25223c263418ffcaae61643b9bc1f701835cd"},
 ]
 "types-pillow 9.2.2.2" = [
     {url = "https://files.pythonhosted.org/packages/0f/de/dc025faeedb396618807f9a1371fac7454341b88f10e47812b0aca0dd379/types_Pillow-9.2.2.2-py3-none-any.whl", hash = "sha256:49a633ad811446efeb2abbfea4596cff470b1a48adba6c944fae57b3a667e5cb"},
