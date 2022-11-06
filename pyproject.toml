@@ -60,6 +60,8 @@ lint = [
     "flake8~=5.0",
     "black~=22.10",
     "isort~=5.10",
+    "flake8-bugbear>=22.10.27",
+    "flake8-simplify>=0.19.3",
 ]
 types = [
     "mypy>=0.982",
@@ -71,6 +73,9 @@ types = [
 
 [tool.isort]
 profile = "black"
+
+[tool.pytest.ini_options]
+addopts = "--ignore=__pypackages__"
 
 [tool.coverage]
 [tool.coverage.report]
