@@ -35,7 +35,7 @@ async def get_user_textures(
     crud: CRUD,
     textures_url: str,
 ):
-    textures = await crud.get_user_textures(user, limit=1, at=at)
+    textures = await crud.get_user_textures(user, at=at)
     return schemas.UserTextures(
         profile_id=user.uuid,  # type: ignore
         profile_name=user.name,  # type: ignore
@@ -44,6 +44,6 @@ async def get_user_textures(
                 url=urljoin(textures_url, v.upload.hash),
                 metadata=v.meta,
             )
-            for k, (v,) in textures.items()
+            for k, v in textures.items()
         },
     )

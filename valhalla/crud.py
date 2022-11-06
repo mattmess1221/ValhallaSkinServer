@@ -1,15 +1,16 @@
 from collections import defaultdict
 from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import cast
+from typing import Iterator, cast
 from uuid import UUID
 
 from fastapi import Depends
 from sqlalchemy.engine import ScalarResult
-from sqlalchemy.ext.asyncio import AsyncScalarResult, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import Select, and_, update
+from sqlalchemy.sql.expression import func
 
 from . import models
 from .db import get_db
@@ -41,30 +42,50 @@ class CRUD:
         self,
         user: models.User,
         *,
+        at: datetime | None = None,
+    ) -> dict[str, models.Texture]:
+        result: Iterator[models.Texture] = await self.db.scalars(
+            select(models.Texture)
+            .options(selectinload(models.Texture.upload))
+            .where(
+                models.Texture.id.in_(
+                    select(func.max(models.Texture.id))
+                    .where(
+                        models.Texture.user_id == user.id,
+                        models.Texture.end_time == None
+                        if at is None
+                        else models.Texture.end_time < at,
+                    )
+                    .order_by(models.Texture.tex_type)
+                    .group_by(models.Texture.tex_type)
+                )
+            )
+        )
+        return {item.tex_type: item for item in result}
+
+    async def get_user_textures_history(
+        self,
+        user: models.User,
+        *,
         limit: int | None = None,
         at: datetime | None = None,
     ) -> dict[str, list[models.Texture]]:
-        if at is None:
-            at = datetime.now()
-        result: AsyncScalarResult = await self.db.stream_scalars(
-            cast(Select, select(models.Texture))
+        result: AsyncIterator[models.Texture] = await self.db.stream_scalars(
+            select(models.Texture)
             .options(selectinload(models.Texture.upload))
-            .where(models.Texture.user_id == user.id)
-            .order_by(models.Texture.tex_type, models.Texture.start_time.desc())
-            .group_by(models.Texture.tex_type, models.Texture.id)
+            .where(
+                models.Texture.user_id == user.id,
+                *(() if at is None else (models.Texture.end_time < at,)),
+            )
+            .order_by(models.Texture.tex_type, models.Texture.id.desc())
+            .group_by(models.Texture.tex_type, models.Texture.id),
         )
 
         results: dict[str, list[models.Texture]] = defaultdict(list)
-        item: models.Texture
         async for item in result:
-            tex_type = cast(str, item.tex_type)
-            start_time = cast(datetime, item.start_time)
-            end_time = cast(datetime, item.end_time)
-            if tex_type in results and len(results[tex_type]) == limit:
+            if item.tex_type in results and len(results[item.tex_type]) == limit:
                 continue
-
-            if start_time < at and end_time is None or at < end_time:
-                results[tex_type].append(item)
+            results[item.tex_type].append(item)
 
         return dict(results)
 
