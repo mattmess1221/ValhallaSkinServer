@@ -38,7 +38,7 @@ async def echo(request: Request):
 @app.on_event("startup")
 async def onstart():
     session: AsyncSession
-    async with engine.begin() as session:
+    async with engine.begin() as session:  # type: ignore
         await session.run_sync(models.Base.metadata.create_all)
 
 

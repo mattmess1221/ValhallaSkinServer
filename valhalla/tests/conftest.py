@@ -30,13 +30,18 @@ engine = create_async_engine(
 )
 TestingSessionLocal = cast(
     Callable[[], AsyncSession],
-    sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession),
+    sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=engine,
+        class_=AsyncSession,  # type: ignore
+    ),
 )
 
 
 async def override_get_db():
     session: AsyncSession
-    async with engine.begin() as session:
+    async with engine.begin() as session:  # type: ignore
         await session.run_sync(Base.metadata.create_all)
     async with TestingSessionLocal() as session:
         yield session
