@@ -19,7 +19,7 @@ async def redirect_http_to_https(
 ) -> Response:
     # redirect to https if using a standard http port. If non-standard, assume dev env
     scheme = request.headers.get("X-Forwarded-Proto", request.url.scheme)
-    port = request.headers.get("X-Forwarded-Port", request.url.port)
+    port = int(request.headers.get("X-Forwarded-Port", request.url.port or 0))
     if port in (80, 443) and scheme == "http":
         url = request.url.replace(scheme="https")
         return RedirectResponse(url, status.HTTP_308_PERMANENT_REDIRECT)
