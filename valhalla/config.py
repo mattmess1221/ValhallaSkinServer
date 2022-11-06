@@ -54,6 +54,12 @@ class Settings(BaseSettings):
     def get_database_url(self) -> str:
         return resolve_db(self.database_url)
 
+    def get_textures_url(self) -> str | None:
+        url = self.textures_url
+        if url and not url.endswith("/"):
+            url += "/"
+        return url
+
     class Config:
         env_file = ".env"
 
