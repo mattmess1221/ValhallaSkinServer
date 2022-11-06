@@ -24,6 +24,15 @@ async def redirect_http_to_https(
     return await call_next(request)
 
 
+@app.api_route("/echo", include_in_schema=False)
+async def echo(request: Request):
+    return {
+        "headers": request.headers,
+        "url": str(request.url),
+        "method": request.method,
+    }
+
+
 @app.on_event("startup")
 async def onstart():
     session: AsyncSession
