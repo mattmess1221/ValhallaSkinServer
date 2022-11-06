@@ -50,6 +50,7 @@ test = [
     "pytest~=7.2",
     "pytest-cov~=4.0",
     "async-asgi-testclient~=1.4",
+    "aiosqlite~=0.17",
 ]
 dev = [
     "pre-commit~=2.20",
