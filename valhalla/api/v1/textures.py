@@ -88,7 +88,7 @@ async def post_texture(
     files: Files = Depends(),
 ):
     file = await download_file(texture.file, max_upload_size)
-    await upload_file(user, texture.type, file, texture.meta, crud, files)
+    await upload_file(user, texture.type, file, texture.metadata, crud, files)
 
 
 @router.put("/textures")

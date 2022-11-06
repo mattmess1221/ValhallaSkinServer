@@ -54,7 +54,7 @@ async def get_user_texture_history(
             key: [
                 schemas.TextureHistoryEntry(
                     url=urljoin(textures_url, entry.upload.hash),
-                    meta=entry.meta,
+                    metadata=entry.meta,
                     start_time=entry.start_time,
                     end_time=entry.end_time,
                 )

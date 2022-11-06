@@ -49,7 +49,7 @@ async def test_texture_upload_post(
     skin = textures["skin"]
 
     assert skin["url"] == hash_url
-    assert skin["meta"] == {}
+    assert not skin["metadata"]
 
     anon_resp = await client.get(f"/api/v1/user/{user.uuid}")
     assert anon_resp.status_code == 200, anon_resp.json()

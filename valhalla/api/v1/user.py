@@ -42,7 +42,7 @@ async def get_user_textures(
         textures={
             k: schemas.Texture(
                 url=urljoin(textures_url, v.upload.hash),
-                meta=v.meta,
+                metadata=v.meta,
             )
             for k, (v,) in textures.items()
         },

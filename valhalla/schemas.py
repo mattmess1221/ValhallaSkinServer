@@ -39,7 +39,7 @@ class LoginResponse(BaseModel):
 
 class Texture(BaseModel):
     url: str
-    meta: dict[str, str] | None = None
+    metadata: dict[str, str] | None = None
 
 
 class UserTextures(BaseModel):
@@ -51,7 +51,7 @@ class UserTextures(BaseModel):
 
 class TextureHistoryEntry(BaseModel):
     url: str
-    meta: dict[str, str] | None = None
+    metadata: dict[str, str] | None = None
     start_time: datetime
     end_time: datetime | None
 
@@ -65,13 +65,13 @@ class UserTextureHistory(BaseModel):
 class TextureUpload(BaseModel):
     type: str = Form()
     file: UploadFile = File(media_type="image/png")
-    meta: dict[str, str] | None = Form(None)
+    metadata: dict[str, str] | None = Form(None)
 
 
 class TexturePost(BaseModel):
     type: str
     file: AnyHttpUrl
-    meta: dict[str, str] | None = None
+    metadata: dict[str, str] | None = None
 
 
 class BulkRequest(BaseModel):

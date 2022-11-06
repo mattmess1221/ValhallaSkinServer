@@ -51,7 +51,7 @@ async def post_skin_old(
 
     form = await request.form()
     meta = {k: v for k, v in form.items() if isinstance(v, str)}
-    texture_data = schemas.TexturePost(type=skin_type, file=file, meta=meta)
+    texture_data = schemas.TexturePost(type=skin_type, file=file, metadata=meta)
     return await textures.post_texture(texture_data, user, crud, files)
 
 
