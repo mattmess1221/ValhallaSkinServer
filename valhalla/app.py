@@ -1,4 +1,7 @@
-from fastapi import FastAPI
+from typing import Awaitable, Callable
+
+from fastapi import FastAPI, Request, Response, status
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.sessions import SessionMiddleware
@@ -8,6 +11,17 @@ from .config import settings
 from .database import engine
 
 app = FastAPI()
+
+
+@app.middleware("http")
+async def redirect_http_to_https(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    # redirect to https if using a standard http port. If non-standard, assume dev env
+    if request.url.port in (80, 443) and request.url.scheme == "http":
+        url = request.url.replace(scheme="https")
+        return RedirectResponse(url, status.HTTP_308_PERMANENT_REDIRECT)
+    return await call_next(request)
 
 
 @app.on_event("startup")
