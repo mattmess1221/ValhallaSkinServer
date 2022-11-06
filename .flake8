@@ -1,0 +1,21 @@
+[flake8]
+max-line-length = 89
+extend-ignore = E501
+extend-select = B950
+exclude =
+    .git
+    __pypackages__
+    .vscode
+    .mypy_cache
+
+# fastapi fixes
+extend-immutable-calls =
+    Depends
+    Security
+    Path
+    Query
+    Header
+    Cookie
+    Body
+    Form
+    File

@@ -1,4 +1,3 @@
-from ..models import Upload
 from ..schemas import Texture
 
 

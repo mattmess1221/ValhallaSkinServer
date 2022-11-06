@@ -31,6 +31,7 @@ def fix_passlib():
     While passlib isn't needed anymore, incremental migrations requires it to
     be installed.
     """
+    # pyright: reportMissingModuleSource=false
     try:
         import passlib
     except ImportError:

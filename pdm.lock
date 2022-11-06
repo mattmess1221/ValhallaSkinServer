@@ -39,6 +39,12 @@ version = "1.4.4"
 summary = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 
 [[package]]
+name = "astor"
+version = "0.8.1"
+requires_python = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
+summary = "Read/rewrite/write Python ASTs"
+
+[[package]]
 name = "async-asgi-testclient"
 version = "1.4.11"
 summary = "Async client for testing ASGI web applications"
@@ -219,6 +225,26 @@ dependencies = [
     "mccabe<0.8.0,>=0.7.0",
     "pycodestyle<2.10.0,>=2.9.0",
     "pyflakes<2.6.0,>=2.5.0",
+]
+
+[[package]]
+name = "flake8-bugbear"
+version = "22.10.27"
+requires_python = ">=3.7"
+summary = "A plugin for flake8 finding likely bugs and design problems in your program. Contains warnings that don't belong in pyflakes and pycodestyle."
+dependencies = [
+    "attrs>=19.2.0",
+    "flake8>=3.0.0",
+]
+
+[[package]]
+name = "flake8-simplify"
+version = "0.19.3"
+requires_python = ">=3.6.1"
+summary = "flake8 plugin which checks for code that can be simplified"
+dependencies = [
+    "astor>=0.1",
+    "flake8>=3.7",
 ]
 
 [[package]]
@@ -679,7 +705,7 @@ dependencies = [
 
 [metadata]
 lock_version = "4.0"
-content_hash = "sha256:dbb13e68831239f71e90e36a27b9e463552883d8985193a89ffd1ded0a3eb150"
+content_hash = "sha256:b8179b4af2a118dea4389f64d1191de35a5c6bd7d762178e392aa1e17ef7c844"
 
 [metadata.files]
 "aiofiles 22.1.0" = [
@@ -701,6 +727,10 @@ content_hash = "sha256:dbb13e68831239f71e90e36a27b9e463552883d8985193a89ffd1ded0
 "appdirs 1.4.4" = [
     {url = "https://files.pythonhosted.org/packages/3b/00/2344469e2084fb287c2e0b57b72910309874c3245463acd6cf5e3db69324/appdirs-1.4.4-py2.py3-none-any.whl", hash = "sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128"},
     {url = "https://files.pythonhosted.org/packages/d7/d8/05696357e0311f5b5c316d7b95f46c669dd9c15aaeecbb48c7d0aeb88c40/appdirs-1.4.4.tar.gz", hash = "sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41"},
+]
+"astor 0.8.1" = [
+    {url = "https://files.pythonhosted.org/packages/5a/21/75b771132fee241dfe601d39ade629548a9626d1d39f333fde31bc46febe/astor-0.8.1.tar.gz", hash = "sha256:6a6effda93f4e1ce9f618779b2dd1d9d84f1e32812c23a29b3fff6fd7f63fa5e"},
+    {url = "https://files.pythonhosted.org/packages/c3/88/97eef84f48fa04fbd6750e62dcceafba6c63c81b7ac1420856c8dcc0a3f9/astor-0.8.1-py2.py3-none-any.whl", hash = "sha256:070a54e890cefb5b3739d19f30f5a5ec840ffc9c50ffa7d23cc9fc1a38ebbfc5"},
 ]
 "async-asgi-testclient 1.4.11" = [
     {url = "https://files.pythonhosted.org/packages/52/9a/0eb3fd37d4f9ad1e9b2b6d6b91357d3ebf7534271c32e343185a5d204903/async-asgi-testclient-1.4.11.tar.gz", hash = "sha256:4449ac85d512d661998ec61f91c9ae01851639611d748d81ae7f816736551792"},
@@ -975,6 +1005,14 @@ content_hash = "sha256:dbb13e68831239f71e90e36a27b9e463552883d8985193a89ffd1ded0
 "flake8 5.0.4" = [
     {url = "https://files.pythonhosted.org/packages/ad/00/9808c62b2d529cefc69ce4e4a1ea42c0f855effa55817b7327ec5b75e60a/flake8-5.0.4.tar.gz", hash = "sha256:6fbe320aad8d6b95cec8b8e47bc933004678dc63095be98528b7bdd2a9f510db"},
     {url = "https://files.pythonhosted.org/packages/cf/a0/b881b63a17a59d9d07f5c0cc91a29182c8e8a9aa2bde5b3b2b16519c02f4/flake8-5.0.4-py2.py3-none-any.whl", hash = "sha256:7a1cf6b73744f5806ab95e526f6f0d8c01c66d7bbe349562d22dfca20610b248"},
+]
+"flake8-bugbear 22.10.27" = [
+    {url = "https://files.pythonhosted.org/packages/c1/17/9bcf98e3071727ea54977840a64b8bec9e3b90a395ae0cb3ac17f76b20a1/flake8_bugbear-22.10.27-py3-none-any.whl", hash = "sha256:6ad0ab754507319060695e2f2be80e6d8977cfcea082293089a9226276bd825d"},
+    {url = "https://files.pythonhosted.org/packages/e3/7d/8df9e2608a90a733be963de901954f83ae20c3e481fd17f31e04ce448c7e/flake8-bugbear-22.10.27.tar.gz", hash = "sha256:a6708608965c9e0de5fff13904fed82e0ba21ac929fe4896459226a797e11cd5"},
+]
+"flake8-simplify 0.19.3" = [
+    {url = "https://files.pythonhosted.org/packages/30/3f/7ec818e7404edbda0d86c918de6022725d2ebfa4382e3e2bdb85236e772e/flake8_simplify-0.19.3-py3-none-any.whl", hash = "sha256:1057320e9312d75849541fee822900d27bcad05b2405edc84713affee635629e"},
+    {url = "https://files.pythonhosted.org/packages/4f/ac/f48f7df445a8706ba2b34014dcb58a1d4f7f10e2f6126094c6069627bcfb/flake8_simplify-0.19.3.tar.gz", hash = "sha256:2fb083bf5142a98d9c9554755cf2f56f8926eb4a33eae30c0809041b1546879e"},
 ]
 "fs 2.4.16" = [
     {url = "https://files.pythonhosted.org/packages/5d/a9/af5bfd5a92592c16cdae5c04f68187a309be8a146b528eac3c6e30edbad2/fs-2.4.16.tar.gz", hash = "sha256:ae97c7d51213f4b70b6a958292530289090de3a7e15841e108fbe144f069d313"},

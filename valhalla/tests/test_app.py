@@ -43,7 +43,7 @@ async def test_texture_upload_post(
     )
     assert upload_resp.status_code == 200, upload_resp.json()
 
-    user_resp = await client.get(f"/api/v1/textures", headers=user.auth_header)
+    user_resp = await client.get("/api/v1/textures", headers=user.auth_header)
     assert user_resp.status_code == 200, user_resp.json()
     textures = user_resp.json()
     skin = textures["skin"]

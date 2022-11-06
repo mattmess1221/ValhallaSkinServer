@@ -1,6 +1,5 @@
 import asyncio
 from logging.config import fileConfig
-from os import getenv
 
 from alembic import context
 from sqlalchemy.engine import Connection
@@ -67,11 +66,10 @@ async def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    import valhalla.models
     from valhalla.database import engine as connectable
 
     async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
+        await connection.run_sync(do_run_migrations)  # type: ignore
 
     await connectable.dispose()
 

@@ -12,7 +12,7 @@ def gen_skin_hash(image_data: bytes) -> str:
         raise HTTPException(400, str(e))
 
     if image.format != "PNG":
-        raise HTTPException(400, f"Unsupported image format")
+        raise HTTPException(400, "Unsupported image format")
 
     # Check size of image.
     # width should be same as or double the height
@@ -25,7 +25,7 @@ def gen_skin_hash(image_data: bytes) -> str:
     valid = width / 2 == height or width == height
 
     if not valid or width not in sizes:
-        raise HTTPException(400, f"Unsupported image size")
+        raise HTTPException(400, "Unsupported image size")
 
     # Create a hash of the image and use it as the filename.
     return hashlib.sha1(image.tobytes()).hexdigest()

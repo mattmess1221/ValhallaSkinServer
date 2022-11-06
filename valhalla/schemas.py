@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Any
-from urllib.parse import urljoin
 from uuid import UUID
 
 from fastapi import File, Form, UploadFile
@@ -66,7 +65,7 @@ class Texture(BaseModel):
     class Config:
         schema_extra = {
             "example": {
-                "url": "https://textures.minelittlepony-mod.com/textures/4bbd43fd83ee1053c42994c4bf1db9496ede6b73",
+                "url": "https://textures.minelittlepony-mod.com/textures/4bbd43fd83ee1053c42994c4bf1db9496ede6b73",  # noqa: B950
                 "metadata": {"model": "default"},
             }
         }
@@ -98,7 +97,7 @@ class TextureHistoryEntry(BaseModel):
     class Config:
         schema_extra = {
             "example": {
-                "url": "https://textures.minelittlepony-mod.com/textures/4bbd43fd83ee1053c42994c4bf1db9496ede6b73",
+                "url": "https://textures.minelittlepony-mod.com/textures/4bbd43fd83ee1053c42994c4bf1db9496ede6b73",  # noqa: B950
                 "metadata": {
                     "model": "default",
                 },

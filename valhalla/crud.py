@@ -55,7 +55,7 @@ class CRUD:
                     select(func.max(models.Texture.id))
                     .where(
                         models.Texture.user_id == user.id,
-                        models.Texture.end_time == None
+                        models.Texture.end_time == None  # noqa: E711
                         if at is None
                         else models.Texture.end_time < at,
                     )

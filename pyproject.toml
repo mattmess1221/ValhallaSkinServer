@@ -43,7 +43,7 @@ build-backend = "pdm.pep517.api"
 [tool.pdm.scripts]
 dev.cmd = "uvicorn valhalla.app:app --reload"
 dev.env = { ENV = "dev", DEBUG = "1" }
-cov = "pytest --cov --cov-report=xml --cov-report=term --cov-fail-under=80"
+cov = "pytest --cov"
 
 [tool.pdm.dev-dependencies]
 test = [
@@ -75,7 +75,9 @@ types = [
 profile = "black"
 
 [tool.pytest.ini_options]
-addopts = "--ignore=__pypackages__"
+norecursedirs = [
+    "__pypackages__"
+]
 
 [tool.coverage]
 [tool.coverage.report]
@@ -90,7 +92,8 @@ exclude_lines = [
 
 [tool.coverage.run]
 omit = [
-    ".vscode*"
+    ".vscode*",
+    "__pypackages__/*",
 ]
 
 [tool.mypy]
