@@ -13,7 +13,7 @@ from ...crud import CRUD
 router = APIRouter(tags=["User History"])
 
 
-@router.get("/history")
+@router.get("/history", response_model=schemas.UserTextureHistory)
 async def get_current_user_texture_history(
     user: models.User = Depends(require_user),
     limit: int | None = None,
@@ -24,7 +24,7 @@ async def get_current_user_texture_history(
     return await get_user_texture_history(user, limit, at, crud, textures_url)
 
 
-@router.get("/history/{user_id}")
+@router.get("/history/{user_id}", response_model=schemas.UserTextureHistory)
 async def get_user_texture_history_by_uuid(
     user_id: UUID,
     limit: int | None = None,

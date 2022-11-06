@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import api, models
+from . import api, models, schemas
 from .config import settings
 from .database import engine
 
@@ -25,3 +25,6 @@ if settings.textures_fs.startswith("file:///"):
     textures_dir = settings.textures_fs[8:]
     static_textures = StaticFiles(directory=textures_dir)
     app.mount("/textures", static_textures, name="textures")
+
+
+schemas.fix_openapi_schema(app.openapi())
