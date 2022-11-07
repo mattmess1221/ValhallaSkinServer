@@ -89,6 +89,7 @@ async def post_texture(
 ):
     file = await download_file(texture.file, max_upload_size)
     await upload_file(user, texture.type, file, texture.metadata, crud, files)
+    await crud.db.commit()
 
 
 @router.put("/textures")
@@ -103,6 +104,7 @@ async def put_texture(
 ):
     body = await read_upload(iter_upload_file(file), file_size)
     await upload_file(user, type, body, meta, crud, files)
+    await crud.db.commit()
 
 
 async def upload_file(
@@ -133,3 +135,4 @@ async def delete_texture(
     crud: CRUD = Depends(),
 ):
     await crud.put_texture(user, texture.type, None)
+    await crud.db.commit()

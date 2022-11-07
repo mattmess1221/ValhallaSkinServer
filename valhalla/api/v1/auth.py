@@ -78,6 +78,7 @@ async def minecraft_login_callback(
 
     response.headers["Authorization"] = token
 
+    await crud.db.commit()
     return LoginResponse(
         access_token=auth_header,
         user_id=user.uuid,  # type: ignore
@@ -121,6 +122,7 @@ async def xbox_login_callback(request: Request, crud: CRUD = Depends()):
             expires=int(expires.total_seconds()),
         )
 
+        await crud.db.commit()
         return response
     except (OAuthError, xbox.XboxLoginError) as e:
         raise HTTPException(403, str(e))
