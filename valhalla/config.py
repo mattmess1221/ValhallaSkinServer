@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     env: Env = Env.PRODUCTION
     debug: bool = False
 
+    texture_type_denylist: list[str] = ["cape"]
+
     secret_key: str = "dev"
     database_url = "sqlite:///./valhalla.db"
 

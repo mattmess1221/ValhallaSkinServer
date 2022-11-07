@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Uploa
 from pydantic import BaseModel
 from starlette import status
 
+from valhalla.config import settings
+
 from ... import image, models, schemas
 from ...auth import require_user
 from ...byteconv import mb
@@ -115,6 +117,8 @@ async def upload_file(
     crud: CRUD,
     files: Files,
 ):
+    if texture_type in settings.texture_type_denylist:
+        raise HTTPException(status.HTTP_400, "That texture type is not allowed")
     texture_hash = await anyio.to_thread.run_sync(image.gen_skin_hash, file)
     upload = await crud.get_upload(texture_hash)
     if not upload:
