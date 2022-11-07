@@ -41,11 +41,20 @@ spec:
       envFrom:
         - configMapRef:
             name: postgresql-config
+      ports:
+        - protocol: TCP
+          containerPort: 5432
+          hostPort: 5432
     - name: api
       image: localhost/valhalla
       volumeMounts:
         - name: postgres-sock
           mountPath: /var/run/postgresql
+        - name: textures
+          mountPath: /project/var/textures
+      env:
+        - name: TEXTURES_FS
+          value: file:///./var/textures
       envFrom:
         - configMapRef:
             name: valhalla-config
@@ -57,6 +66,9 @@ spec:
     - name: postgres-data
       persistentVolumeClaim:
         claimName: postgres-data
+    - name: textures
+      persistentVolumeClaim:
+        claimName: textures
     - name: postgres-sock
       emptyDir: {}
 
@@ -65,3 +77,9 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-data
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: textures
