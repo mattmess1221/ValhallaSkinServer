@@ -1,7 +1,8 @@
+import secrets
 from enum import Enum
 from urllib.parse import urlparse
 
-from pydantic import AnyHttpUrl, BaseSettings
+from pydantic import AnyHttpUrl, BaseSettings, Field
 
 async_sql_drivers = {
     "sqlite": "sqlite+aiosqlite",
@@ -37,7 +38,7 @@ class Settings(BaseSettings):
     database_url = "sqlite:///./valhalla.db"
 
     # TODO this should be saved in the database
-    server_id: str = Field(default_factory=secrets.token_urlsafe)
+    server_id: str = Field(default_factory=lambda: secrets.token_urlsafe(20))
 
     textures_fs: str = "file://./textures/"
     textures_url: AnyHttpUrl | None = None
