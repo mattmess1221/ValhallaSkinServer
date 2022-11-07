@@ -51,6 +51,7 @@ class BaseModel(PydanticBaseModel):
 class LoginMinecraftHandshakeResponse(BaseModel):
     server_id: str
     verify_token: int
+    offline: bool = False
 
 
 class LoginResponse(BaseModel):
