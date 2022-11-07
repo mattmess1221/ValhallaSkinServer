@@ -68,11 +68,8 @@ async def minecraft_login_callback(
         del validate_tokens[verify_token]
 
     joined = await mojang.has_joined(
-        mojang.HasJoinedRequest(
-            username=name,
-            server_id=settings.server_id,
-            ip=client,
-        )
+        username=name,
+        server_id=settings.server_id,
     )
 
     user = await crud.get_or_create_user(joined.id, joined.name)

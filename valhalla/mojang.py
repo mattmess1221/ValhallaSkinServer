@@ -9,24 +9,22 @@ from .schemas import BaseModel
 _VALIDATE = "https://sessionserver.mojang.com/session/minecraft/hasJoined"
 
 
-class HasJoinedRequest(BaseModel):
-    username: str
-    server_id: str
-    ip: str
-
-
 class HasJoinedResponse(BaseModel):
     id: UUID
     name: str
 
 
-async def has_joined(params: HasJoinedRequest) -> HasJoinedResponse:
+async def has_joined(*, username: str, server_id: str) -> HasJoinedResponse:
     """Validates a login against Mojang's servers
 
     http://wiki.vg/Protocol_Encryption#Authentication
     """
+    params = {
+        "username": username,
+        "serverId": server_id,
+    }
     async with httpx.AsyncClient() as client:
-        response = await client.get(_VALIDATE, params=params.dict())
+        response = await client.get(_VALIDATE, params=params)
         if response.is_success:
             return HasJoinedResponse.parse_obj(response.json())
         raise HTTPException(401)
