@@ -44,6 +44,7 @@ build-backend = "pdm.pep517.api"
 dev.cmd = "uvicorn valhalla.app:app --reload"
 dev.env = { ENV = "dev", DEBUG = "1" }
 cov = "pytest --cov"
+lint.composite = ["black valhalla", "isort valhalla"]
 
 [tool.pdm.dev-dependencies]
 test = [
