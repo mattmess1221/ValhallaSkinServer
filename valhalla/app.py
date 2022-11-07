@@ -1,3 +1,4 @@
+import os
 from typing import Awaitable, Callable
 from urllib.parse import urlparse
 
@@ -50,6 +51,7 @@ app.include_router(api.router, prefix="/api")
 parsed_textures_url = urlparse(settings.textures_fs)
 if parsed_textures_url.scheme in ("file", None):
     textures_dir = parsed_textures_url.path[1:]
+    os.makedirs(textures_dir, exist_ok=True)
     static_textures = StaticFiles(directory=textures_dir)
     app.mount("/textures", static_textures, name="textures")
 
