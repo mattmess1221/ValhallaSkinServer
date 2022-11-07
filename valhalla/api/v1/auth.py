@@ -78,11 +78,13 @@ async def minecraft_login_callback(
 
     response.headers["Authorization"] = token
 
-    await crud.db.commit()
-    return LoginResponse(
-        access_token=auth_header,
-        user_id=user.uuid,  # type: ignore
-    )
+    try:
+        return LoginResponse(
+            access_token=auth_header,
+            user_id=user.uuid,  # type: ignore
+        )
+    finally:
+        await crud.db.commit()
 
 
 xboxlive: StarletteOAuth2App = OAuth().register(
