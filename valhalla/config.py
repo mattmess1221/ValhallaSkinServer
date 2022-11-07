@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     secret_key: str = "dev"
     database_url = "sqlite:///./valhalla.db"
 
+    # TODO this should be saved in the database
+    server_id: str = Field(default_factory=secrets.token_urlsafe)
+
     textures_fs: str = "file://./textures/"
     textures_url: AnyHttpUrl | None = None
 

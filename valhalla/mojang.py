@@ -11,8 +11,8 @@ _VALIDATE = "https://sessionserver.mojang.com/session/minecraft/hasJoined"
 
 class HasJoinedRequest(BaseModel):
     username: str
+    server_id: str
     ip: str
-    server_id: str = ""
 
 
 class HasJoinedResponse(BaseModel):

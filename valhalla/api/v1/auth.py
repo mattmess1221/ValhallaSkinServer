@@ -42,6 +42,7 @@ async def minecraft_login(
     validate_tokens[verify_token] = name, client
 
     return LoginMinecraftHandshakeResponse(
+        server_id=settings.server_id,
         verify_token=verify_token,
     )
 
@@ -69,6 +70,7 @@ async def minecraft_login_callback(
     joined = await mojang.has_joined(
         mojang.HasJoinedRequest(
             username=name,
+            server_id=settings.server_id,
             ip=client,
         )
     )
