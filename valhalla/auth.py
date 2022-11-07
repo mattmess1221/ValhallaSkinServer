@@ -17,6 +17,8 @@ async def current_user(
     cookie: str | None = Cookie(default=None, alias="token"),
     crud: CRUD = Depends(),
 ) -> models.User | None:
+    if header and header.startswith("Bearer "):
+        header = header[7:]
     token = header or cookie
     if token is None:
         return None
@@ -24,7 +26,7 @@ async def current_user(
     try:
         return await user_from_token(token, crud)
     except JWTError:
-        raise HTTPException(403)
+        return None
 
 
 def require_user(user: models.User | None = Depends(current_user)) -> models.User:
@@ -36,8 +38,8 @@ def require_user(user: models.User | None = Depends(current_user)) -> models.Use
 def token_from_user(user: models.User, *, expire_in: timedelta) -> str:
     payload = {
         "sid": user.id,
-        "iat": datetime.now(),
-        "exp": datetime.now() + expire_in,
+        "iat": datetime.utcnow(),
+        "exp": datetime.utcnow() + expire_in,
     }
     return jwt.encode(payload, settings.secret_key, algorithm="HS256")
 
