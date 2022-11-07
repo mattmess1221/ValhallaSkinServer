@@ -25,16 +25,22 @@ async def logout():
     return response
 
 
-@router.post("/auth/minecraft", response_model=LoginMinecraftHandshakeResponse)
-async def minecraft_login(
-    request: Request, name: str = Form()
-) -> LoginMinecraftHandshakeResponse:
+def get_host_client(request: Request) -> str:
     if not request.client:
         raise HTTPException(400)
+    return request.headers.get("X-Forwarded-For", request.client.host)
+
+
+@router.post("/auth/minecraft", response_model=LoginMinecraftHandshakeResponse)
+async def minecraft_login(
+    request: Request,
+    name: str = Form(),
+    client: str = Depends(get_host_client),
+) -> LoginMinecraftHandshakeResponse:
 
     # Generate a random 32 bit integer. It will be checked later.
     verify_token = secrets.randbits(32)
-    validate_tokens[verify_token] = name, request.client.host
+    validate_tokens[verify_token] = name, client
 
     return LoginMinecraftHandshakeResponse(
         server_id=settings.server_id,
@@ -49,9 +55,8 @@ async def minecraft_login_callback(
     name: str,
     verify_token: int = Form(alias="verifyToken"),
     crud: CRUD = Depends(),
+    client: str = Depends(get_host_client),
 ) -> LoginResponse:
-    if not request.client:
-        raise HTTPException(400)
     if verify_token not in validate_tokens:
         raise HTTPException(403)
 
@@ -59,7 +64,7 @@ async def minecraft_login_callback(
         xname, addr = validate_tokens[verify_token]
         if xname != name:
             raise HTTPException(403)
-        if addr != request.client.host:
+        if addr != client:
             raise HTTPException(403)
     finally:
         del validate_tokens[verify_token]
@@ -68,7 +73,7 @@ async def minecraft_login_callback(
         mojang.HasJoinedRequest(
             username=name,
             server_id=settings.server_id,
-            ip=request.client.host,
+            ip=client,
         )
     )
 
