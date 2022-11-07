@@ -1,4 +1,5 @@
 from typing import Awaitable, Callable
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import RedirectResponse
@@ -46,8 +47,9 @@ app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
 
 app.include_router(api.router, prefix="/api")
 
-if settings.textures_fs.startswith("file:///"):
-    textures_dir = settings.textures_fs[8:]
+parsed_textures_url = urlparse(settings.textures_fs)
+if parsed_textures_url.scheme in ("file", None):
+    textures_dir = parsed_textures_url.path[1:]
     static_textures = StaticFiles(directory=textures_dir)
     app.mount("/textures", static_textures, name="textures")
 
