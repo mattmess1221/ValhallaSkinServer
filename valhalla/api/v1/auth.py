@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from authlib.integrations.starlette_client import OAuth, OAuthError, StarletteOAuth2App
 from expiringdict import ExpiringDict
-from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 
 from ... import auth, mojang, xbox
@@ -50,8 +50,8 @@ async def minecraft_login(
 @router.post("/auth/minecraft/callback", response_model=LoginResponse)
 async def minecraft_login_callback(
     response: Response,
-    name: str,
-    verify_token: int = Query(alias="verifyToken"),
+    name: str = Form(),
+    verify_token: int = Form(alias="verifyToken"),
     crud: CRUD = Depends(),
     client: str = Depends(get_client_ip),
 ) -> LoginResponse:
