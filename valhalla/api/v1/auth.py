@@ -33,7 +33,6 @@ def get_host_client(request: Request) -> str:
 
 @router.post("/auth/minecraft", response_model=LoginMinecraftHandshakeResponse)
 async def minecraft_login(
-    request: Request,
     name: str = Form(),
     client: str = Depends(get_host_client),
 ) -> LoginMinecraftHandshakeResponse:
@@ -50,7 +49,6 @@ async def minecraft_login(
 
 @router.post("/auth/minecraft/callback", response_model=LoginResponse)
 async def minecraft_login_callback(
-    request: Request,
     response: Response,
     name: str,
     verify_token: int = Form(alias="verifyToken"),
