@@ -30,6 +30,13 @@ class Env(Enum):
         return self is Env.PRODUCTION
 
 
+def generate_server_id():
+    s = secrets.token_urlsafe(20)
+    s = s.replace("_", "")
+    s = s.replace("-", "")
+    return s
+
+
 class Settings(BaseSettings):
     env: Env = Env.PRODUCTION
     debug: bool = False
@@ -38,7 +45,7 @@ class Settings(BaseSettings):
     database_url = "sqlite:///./valhalla.db"
 
     # TODO this should be saved in the database
-    server_id: str = Field(default_factory=lambda: secrets.token_urlsafe(20))
+    server_id: str = Field(default_factory=generate_server_id)
 
     textures_fs: str = "file://./textures/"
     textures_url: AnyHttpUrl | None = None
