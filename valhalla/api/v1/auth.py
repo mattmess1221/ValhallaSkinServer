@@ -25,7 +25,7 @@ async def logout():
     return response
 
 
-def get_host_client(request: Request) -> str:
+def get_client_ip(request: Request) -> str:
     if not request.client:
         raise HTTPException(400)
     return request.headers.get("X-Forwarded-For", request.client.host)
@@ -34,7 +34,7 @@ def get_host_client(request: Request) -> str:
 @router.post("/auth/minecraft", response_model=LoginMinecraftHandshakeResponse)
 async def minecraft_login(
     name: str = Form(),
-    client: str = Depends(get_host_client),
+    client: str = Depends(get_client_ip),
 ) -> LoginMinecraftHandshakeResponse:
 
     # Generate a random 32 bit integer. It will be checked later.
@@ -53,7 +53,7 @@ async def minecraft_login_callback(
     name: str,
     verify_token: int = Form(alias="verifyToken"),
     crud: CRUD = Depends(),
-    client: str = Depends(get_host_client),
+    client: str = Depends(get_client_ip),
 ) -> LoginResponse:
     if verify_token not in validate_tokens:
         raise HTTPException(403)
