@@ -1,8 +1,7 @@
-import secrets
 from enum import Enum
 from urllib.parse import urlparse
 
-from pydantic import AnyHttpUrl, BaseSettings, Field
+from pydantic import AnyHttpUrl, BaseSettings
 
 async_sql_drivers = {
     "sqlite": "sqlite+aiosqlite",
