@@ -10,3 +10,4 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with SessionLocal() as db:
         async with db.begin():
             yield db
+            await db.commit()

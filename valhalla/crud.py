@@ -97,11 +97,9 @@ class CRUD:
         if user is None:
             user = models.User(uuid=uuid, name=name)
             self.db.add(user)
+            await self.db.flush()
         elif user.name != name:
             user.name = name
-
-        await self.db.commit()
-        await self.db.refresh(user)
 
         return user
 
@@ -119,6 +117,7 @@ class CRUD:
             user=user,
         )
         self.db.add(upload)
+        await self.db.flush()
         return upload
 
     async def put_texture(
@@ -147,4 +146,4 @@ class CRUD:
                     meta=meta or {},
                 )
             )
-        await self.db.commit()
+        await self.db.flush()

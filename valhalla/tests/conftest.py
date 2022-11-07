@@ -45,6 +45,7 @@ async def override_get_db():
         await session.run_sync(Base.metadata.create_all)
     async with TestingSessionLocal() as session:
         yield session
+        await session.commit()
 
 
 app.dependency_overrides[get_db] = override_get_db
