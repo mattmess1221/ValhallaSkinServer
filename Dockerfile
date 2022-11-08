@@ -33,4 +33,4 @@ ENV ALEMBIC_CONFIG=/project/etc/valhalla/alembic.ini
 ENV PORT=8080
 EXPOSE $PORT
 CMD alembic upgrade head && \
-    gunicorn valhalla:app -k uvicorn.workers.UvicornWorker
+    gunicorn valhalla.app:app -k uvicorn.workers.UvicornWorker
