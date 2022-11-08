@@ -21,8 +21,22 @@ from . import auth, textures
 
 router = APIRouter(deprecated=True)
 
-router.add_api_route("/auth/handshake", auth.minecraft_login, methods=["POST"])
-router.add_api_route("/auth/response", auth.minecraft_login_callback, methods=["POST"])
+router.add_api_route(
+    "/auth/handshake",
+    auth.minecraft_login,
+    methods=["POST"],
+    tags=["Authentication"],
+    summary="Start authentication via Minecraft",
+    description="Aliased to `/api/v1/auth/minecraft`",
+)
+router.add_api_route(
+    "/auth/response",
+    auth.minecraft_login_callback,
+    methods=["POST"],
+    tags=["Authentication"],
+    summary="Callback for authentication via Minecraft",
+    description="Aliased to `/api/v1/auth/minecraft/callback`",
+)
 
 
 def check_user(

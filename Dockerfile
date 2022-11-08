@@ -5,11 +5,14 @@ ENV PIP_NO_CACHE_DIR=no \
     PDM_USE_VENV=no
 
 FROM python-base AS builder
+# heroku provides the SOURCE_VERSION env var with commit
+ARG SOURCE_VERSION=0.0.0
+ENV PDM_PEP517_SCM_VERSION=$SOURCE_VERSION
 
 RUN pip install pdm
 
-COPY pyproject.toml pdm.lock README.md /project/
-COPY /valhalla /project/valhalla
+COPY README.md pyproject.toml pdm.lock README.md /project/
+COPY valhalla USAGE.md /project/valhalla/
 
 WORKDIR /project
 RUN pdm install --prod -G prod --no-lock --no-editable
@@ -31,4 +34,3 @@ ENV PORT=8080
 EXPOSE $PORT
 CMD alembic upgrade head && \
     gunicorn valhalla:app -k uvicorn.workers.UvicornWorker
-

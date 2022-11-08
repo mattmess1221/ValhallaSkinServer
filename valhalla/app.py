@@ -8,11 +8,21 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.sessions import SessionMiddleware
 
+import valhalla
+
 from . import api, models, schemas
 from .config import settings
 from .database import engine
 
-app = FastAPI()
+app = FastAPI(
+    title="Valhalla Skin Server",
+    version=valhalla.__version__,
+    description=valhalla.__usage__,
+    license_info={
+        "name": "MIT License",
+        "url": "https://github.com/killjoy1221/ValhallaSkinServer/blob/main/LICENSE",
+    },
+)
 
 
 @app.middleware("http")
