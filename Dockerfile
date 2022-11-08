@@ -11,7 +11,7 @@ ENV PDM_PEP517_SCM_VERSION=$SOURCE_VERSION
 
 RUN pip install pdm
 
-COPY README.md pyproject.toml pdm.lock README.md /project/
+COPY pyproject.toml pdm.lock README.md /project/
 COPY valhalla USAGE.md /project/valhalla/
 
 WORKDIR /project
