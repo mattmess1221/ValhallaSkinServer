@@ -7,9 +7,11 @@ ENV PIP_NO_CACHE_DIR=no \
 FROM python-base AS builder
 # heroku provides the SOURCE_VERSION env var with commit
 ARG SOURCE_VERSION=0.0.0
-ENV PDM_PEP517_SCM_VERSION=$SOURCE_VERSION
+ENV PDM_CHECK_UPDATE=False \
+    PDM_PEP517_SCM_VERSION=$SOURCE_VERSION \
+    PDM_USE_VENV=False
 
-RUN pip install pdm
+RUN pip install -q pdm==2.10.4
 
 COPY pyproject.toml pdm.lock README.md /project/
 COPY valhalla USAGE.md /project/valhalla/
