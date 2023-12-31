@@ -26,5 +26,10 @@ async def has_joined(*, username: str, server_id: str) -> HasJoinedResponse:
     async with httpx.AsyncClient() as client:
         response = await client.get(_VALIDATE, params=params)
         if response.is_success:
-            return HasJoinedResponse.parse_obj(response.json())
+            try:
+                data = response.json()
+            except ValueError:
+                pass
+            else:
+                return HasJoinedResponse.parse_obj(data)
         raise HTTPException(401)
