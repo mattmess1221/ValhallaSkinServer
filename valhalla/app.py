@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.sessions import SessionMiddleware
 
 import valhalla
@@ -18,9 +17,9 @@ from .database import engine
 
 @asynccontextmanager
 async def app_lifespan(app: FastAPI):
-    session: AsyncSession
-    async with engine.begin() as session:  # type: ignore
-        await session.run_sync(models.Base.metadata.create_all)
+    async with engine.begin() as session:
+        await session.run_sync(models.reg.metadata.create_all)
+
     yield
 
 

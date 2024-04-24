@@ -20,21 +20,16 @@ dependencies = [
     "python-dotenv~=0.21",
     "python-jose~=3.3",
     "python-multipart~=0.0",
-    "sqlalchemy~=1.4",
-    "sqlalchemy-utils~=0.38",
+    "sqlalchemy>=2.0.29",
+    "psycopg[binary]>=3.1.18",
     "uvicorn~=0.19",
+    "gunicorn~=20.1",
 ]
 requires-python = ">=3.10,<4.0"
 license = { text = "MIT" }
 
 [project.urls]
 repository = "https://github.com/killjoy1221/ValhallaSkinServer"
-
-[project.optional-dependencies]
-prod = [
-    "asyncpg~=0.27",
-    "gunicorn~=20.1",
-]
 
 [build-system]
 requires = ["pdm-pep517>=1.0.0"]
@@ -50,7 +45,7 @@ write_template = "__version__ = '{}'"
 dev.cmd = "uvicorn valhalla.app:app --reload"
 dev.env = { ENV = "dev", DEBUG = "1" }
 cov = "pytest --cov"
-lint.composite = ["black valhalla", "isort valhalla"]
+lint.composite = ["ruff check --fix", "ruff format"]
 
 [tool.pdm.dev-dependencies]
 test = [
@@ -70,7 +65,6 @@ types = [
     "types-aiofiles>=22.1.0",
     "types-pillow>=9.2.2.2",
     "types-python-jose>=3.3.4",
-    "types-passlib>=1.7.7",
 ]
 
 [tool.pytest.ini_options]

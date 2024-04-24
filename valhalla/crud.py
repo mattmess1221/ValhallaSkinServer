@@ -12,7 +12,7 @@ from sqlalchemy.engine import ScalarResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy.sql import Select, and_, update
+from sqlalchemy.sql import Select, update
 from sqlalchemy.sql.expression import func
 
 from . import models
@@ -27,7 +27,8 @@ class CRUD:
         result: ScalarResult = await self.db.scalars(
             cast(Select, select(models.User)).where(models.User.id == user_id).limit(1)
         )
-        return result.one_or_none()
+        user = result.one_or_none()
+        return user
 
     async def get_user_by_uuid(self, uuid: UUID) -> models.User | None:
         result: ScalarResult = await self.db.scalars(
@@ -97,7 +98,6 @@ class CRUD:
         if user is None:
             user = models.User(uuid=uuid, name=name)
             self.db.add(user)
-            await self.db.flush()
         elif user.name != name:
             user.name = name
 
@@ -114,10 +114,9 @@ class CRUD:
     async def put_upload(self, user: models.User, texture_hash: str):
         upload = models.Upload(
             hash=texture_hash,
-            user=user,
+            user_id=user.id,
         )
         self.db.add(upload)
-        await self.db.flush()
         return upload
 
     async def put_texture(
@@ -128,22 +127,20 @@ class CRUD:
         meta: dict[str, str] | None = None,
     ):
         await self.db.execute(
-            update(
-                models.Texture,
-                whereclause=and_(
-                    models.Texture.user == user,
-                    models.Texture.tex_type == tex_type,
-                ),
-                values={models.Texture.end_time: datetime.now()},
+            update(models.Texture)
+            .where(
+                models.Texture.user_id == user.id,
+                models.Texture.tex_type == tex_type,
             )
+            .values({models.Texture.end_time: datetime.now()}),
         )
         if upload:
             self.db.add(
                 models.Texture(
-                    user=user,
-                    upload=upload,
+                    user_id=user.id,
+                    upload_id=upload.id,
                     tex_type=tex_type,
                     meta=meta or {},
                 )
             )
-        await self.db.flush()
+        await self.db.commit()

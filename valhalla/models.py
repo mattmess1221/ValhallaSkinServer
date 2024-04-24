@@ -1,54 +1,66 @@
-from __future__ import annotations
+# from __future__ import annotations
 
 from datetime import datetime
-from typing import cast
+from typing import Any
 from uuid import UUID
 
-import sqlalchemy as sa
-import sqlalchemy_utils as sau
+from sqlalchemy import ForeignKey, func
+from sqlalchemy.orm import Mapped, mapped_column, registry, relationship
+from sqlalchemy.types import JSON
 
-from .database import Base, C, R, SQLType, col, fk, pk, rel
-
-Integer = cast(type[SQLType[int]], sa.Integer)
-String = cast(type[SQLType[str]], sa.String)
-DateTime = cast(type[SQLType[datetime]], sa.DateTime)
-JSON = cast(type[SQLType[dict[str, str]]], sa.JSON)
-UUIDType = cast(type[SQLType[UUID]], sau.UUIDType)
+reg = registry()
 
 
-@sau.generic_repr
-class User(Base):
+@reg.mapped_as_dataclass
+class User:
     __tablename__ = "users"
-    id: C[int] = pk(default=None)
-    uuid: C[UUID] = col(UUIDType, unique=True, nullable=False)
-    name: C[str] = col(String, nullable=False)
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    uuid: Mapped[UUID] = mapped_column(unique=True)
+    name: Mapped[str] = mapped_column()
 
-    textures: R[list[Texture]] = rel("Texture", back_populates="user", default=None)
+    textures: Mapped[list["Texture"]] = relationship(
+        back_populates="user", init=False, lazy="selectin", repr=False
+    )
+    uploads: Mapped[list["Upload"]] = relationship(
+        back_populates="user", init=False, lazy="selectin", repr=False
+    )
 
 
-@sau.generic_repr
-class Upload(Base):
+@reg.mapped_as_dataclass
+class Upload:
     __tablename__ = "uploads"
-    id: C[int] = pk(default=None)
-    hash: C[str] = col(String, nullable=False, unique=True)
-    user_id: C[int] = fk("users.id", nullable=False, default=None)
-    upload_time: C[datetime] = col(DateTime, default=datetime.now, nullable=False)
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    hash: Mapped[str] = mapped_column(unique=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    upload_time: Mapped[datetime] = mapped_column(
+        insert_default=func.current_timestamp(), default=None
+    )
 
-    user: R[User] = rel("User", default=None)
+    user: Mapped[User] = relationship(back_populates="uploads", init=False, repr=False)
+    textures: Mapped[list["Texture"]] = relationship(
+        back_populates="upload", init=False, repr=False
+    )
 
 
-@sau.generic_repr
-class Texture(Base):
+@reg.mapped_as_dataclass
+class Texture:
     __tablename__ = "textures"
 
-    id: C[int] = pk(default=None)
-    user_id: C[int] = fk("users.id", nullable=False, default=None)
-    upload_id: C[int] = fk("uploads.id", nullable=False, default=None)
-    tex_type: C[str] = col(String, nullable=False)
-    meta: C[dict[str, str]] = col(JSON, default=dict)
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    upload_id: Mapped[int] = mapped_column(ForeignKey("uploads.id"))
+    tex_type: Mapped[str] = mapped_column()
+    meta: Mapped[Any] = mapped_column(JSON, default_factory=dict)
 
-    start_time: C[datetime] = col(DateTime, default=datetime.now, nullable=False)
-    end_time: C[datetime | None] = col(DateTime, default=None)
+    start_time: Mapped[datetime] = mapped_column(
+        insert_default=func.current_timestamp(),
+        default=None,
+    )
+    end_time: Mapped[datetime | None] = mapped_column(default=None)
 
-    user: R[User] = rel("User", default=None, back_populates="textures")
-    upload: R[Upload] = rel("Upload", default=None)
+    user: Mapped["User"] = relationship(
+        back_populates="textures", init=False, lazy="selectin", repr=False
+    )
+    upload: Mapped["Upload"] = relationship(
+        back_populates="textures", init=False, lazy="selectin", repr=False
+    )

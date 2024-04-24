@@ -98,7 +98,7 @@ xboxlive: StarletteOAuth2App = OAuth().register(
 
 @router.api_route("/auth/xbox")
 async def xbox_login(request: Request):
-    callback = request.url_for("xbox_login_callback")
+    callback = str(request.url_for("xbox_login_callback"))
     callback = callback.replace("http://127.0.0.1", "http://localhost")
     return await xboxlive.authorize_redirect(request, callback)
 
