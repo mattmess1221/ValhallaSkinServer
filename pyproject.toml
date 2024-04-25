@@ -64,11 +64,7 @@ dev = [
     "aiosqlite~=0.17",
 ]
 lint = [
-    "flake8~=5.0",
-    "black~=22.10",
-    "isort~=5.10",
-    "flake8-bugbear>=22.10.27",
-    "flake8-simplify>=0.19.3",
+    "ruff>=0.4.1",
 ]
 types = [
     "mypy>=0.982",
@@ -77,9 +73,6 @@ types = [
     "types-python-jose>=3.3.4",
     "types-passlib>=1.7.7",
 ]
-
-[tool.isort]
-profile = "black"
 
 [tool.pytest.ini_options]
 norecursedirs = [
@@ -112,3 +105,10 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "valhalla.crud"
 ignore_errors = true
+
+[tool.ruff]
+target-version = 'py310'
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "B", "SIM"]
+ignore = ["B008", "B904"]
