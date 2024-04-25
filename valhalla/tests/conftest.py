@@ -4,11 +4,8 @@ from typing import Annotated, Callable, cast
 from uuid import UUID, uuid4
 
 import pytest
-
-# use async-asgi-testclient instead of the starlette one because of
-# https://github.com/encode/starlette/issues/472
-from async_asgi_testclient import TestClient
 from fastapi import Depends, Header
+from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 

@@ -3,8 +3,8 @@ from .conftest import TestClient, TestUser, assets
 test_skin = assets / "good" / "64x64.png"
 
 
-async def test_unknown_bulk_user(client: TestClient, user: TestUser):
-    resp = await client.post(
+def test_unknown_bulk_user(client: TestClient, user: TestUser):
+    resp = client.post(
         "/api/v1/bulk_textures",
         json={
             "uuids": [
@@ -17,10 +17,10 @@ async def test_unknown_bulk_user(client: TestClient, user: TestUser):
     assert len(data["users"]) == 0
 
 
-async def test_bulk_users(client: TestClient, users: list[TestUser]):
+def test_bulk_users(client: TestClient, users: list[TestUser]):
     # setup
     for u in users:
-        resp = await client.put(
+        resp = client.put(
             "/api/v1/textures",
             headers=u.auth_header,
             files={
@@ -31,7 +31,7 @@ async def test_bulk_users(client: TestClient, users: list[TestUser]):
 
     uuids = [str(u.uuid).replace("-", "") for u in users]
 
-    resp = await client.post("/api/v1/bulk_textures", json={"uuids": uuids})
+    resp = client.post("/api/v1/bulk_textures", json={"uuids": uuids})
     assert resp.status_code == 200
 
     data = resp.json()
