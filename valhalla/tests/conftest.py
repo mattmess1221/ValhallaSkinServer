@@ -64,7 +64,8 @@ app.dependency_overrides[current_user] = override_current_user
 @pytest.fixture
 def client(tmpdir: Path):
     settings.textures_fs = f"file://{tmpdir}"
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client
 
 
 @pytest.fixture(autouse=True)
