@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import (
@@ -40,8 +41,8 @@ router.add_api_route(
 
 
 def check_user(
-    user_id: UUID = Path(),
-    user: models.User = Depends(require_user),
+    user: Annotated[models.User, Depends(require_user)],
+    user_id: Annotated[UUID, Path()],
 ) -> models.User:
     if user_id != user.uuid:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
@@ -52,11 +53,11 @@ def check_user(
 @router.post("/user/{user_id}/{skin_type}", tags=["Texture Uploads"])
 async def post_skin_old(
     request: Request,
+    file: Annotated[AnyHttpUrl, Form()],
+    user: Annotated[models.User, Depends(check_user)],
+    crud: Annotated[CRUD, Depends()],
+    files: Annotated[Files, Depends()],
     skin_type: str,
-    file: AnyHttpUrl = Form(),
-    user: models.User = Depends(check_user),
-    crud: CRUD = Depends(),
-    files: Files = Depends(),
 ):
     """Upload a skin texture from a url
 
@@ -65,19 +66,19 @@ async def post_skin_old(
 
     form = await request.form()
     meta = {k: v for k, v in form.items() if isinstance(v, str)}
-    texture_data = schemas.TexturePost(type=skin_type, file=file, metadata=meta)
-    return await textures.post_texture(texture_data, user, crud, files)
+    body = schemas.TexturePost(type=skin_type, file=file, metadata=meta)
+    return await textures.post_texture(body=body, user=user, crud=crud, files=files)
 
 
 @router.put("/user/{user_id}/{skin_type}", tags=["Texture Uploads"])
 async def put_skin_old(
     request: Request,
+    crud: Annotated[CRUD, Depends()],
+    files: Annotated[Files, Depends()],
+    user: Annotated[models.User, Depends(check_user)],
+    file: Annotated[UploadFile, File()],
+    file_size: Annotated[int, Depends(textures.valid_content_length)],
     skin_type: str,
-    file: UploadFile = File(),
-    file_size: int = Depends(textures.valid_content_length),
-    user: models.User = Depends(check_user),
-    crud: CRUD = Depends(),
-    files: Files = Depends(),
 ):
     """Upload a skin texture from a file
 
@@ -87,15 +88,21 @@ async def put_skin_old(
     form = await request.form()
     meta = {k: v for k, v in form.items() if isinstance(v, str)}
     return await textures.put_texture(
-        skin_type, file, file_size, meta, user, crud, files
+        crud=crud,
+        files=files,
+        user=user,
+        file=file,
+        file_size=file_size,
+        type=skin_type,
+        meta=meta,
     )
 
 
 @router.delete("/user/{user_id}/{skin_type}", tags=["Texture Uploads"])
 async def delete_skin_old(
+    user: Annotated[models.User, Depends(check_user)],
+    crud: Annotated[CRUD, Depends()],
     skin_type: str,
-    user: models.User = Depends(check_user),
-    crud: CRUD = Depends(),
 ):
     texture = textures.DeleteTexture(type=skin_type)
     await textures.delete_texture(texture, user, crud)

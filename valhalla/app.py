@@ -14,6 +14,14 @@ from . import api, models, schemas
 from .config import settings
 from .database import engine
 
+
+async def app_lifespan():
+    session: AsyncSession
+    async with engine.begin() as session:  # type: ignore
+        await session.run_sync(models.Base.metadata.create_all)
+    yield
+
+
 app = FastAPI(
     title="Valhalla Skin Server",
     version=valhalla.__version__,
@@ -22,6 +30,7 @@ app = FastAPI(
         "name": "MIT License",
         "url": "https://github.com/killjoy1221/ValhallaSkinServer/blob/main/LICENSE",
     },
+    lifespan=app_lifespan,
 )
 
 
@@ -45,13 +54,6 @@ async def echo(request: Request):
         "url": str(request.url),
         "method": request.method,
     }
-
-
-@app.on_event("startup")
-async def onstart():
-    session: AsyncSession
-    async with engine.begin() as session:  # type: ignore
-        await session.run_sync(models.Base.metadata.create_all)
 
 
 app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)

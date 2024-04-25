@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, cast
+from typing import Annotated, Callable, cast
 from uuid import UUID, uuid4
 
 import pytest
@@ -51,8 +51,8 @@ app.dependency_overrides[get_db] = override_get_db
 
 
 async def override_current_user(
-    authorization: str | None = Header(None),
-    crud: CRUD = Depends(),
+    crud: Annotated[CRUD, Depends()],
+    authorization: Annotated[str | None, Header()] = None,
 ):
     if authorization:
         uname, userid = authorization.split(":")

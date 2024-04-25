@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Annotated
 from urllib.parse import urljoin
 from uuid import UUID
 
@@ -15,22 +16,22 @@ router = APIRouter(tags=["User History"])
 
 @router.get("/history", response_model=schemas.UserTextureHistory)
 async def get_current_user_texture_history(
-    user: models.User = Depends(require_user),
+    user: Annotated[models.User, Depends(require_user)],
+    crud: Annotated[CRUD, Depends()],
+    textures_url: Annotated[str, Depends(get_textures_url)],
     limit: int | None = None,
     at: datetime | None = None,
-    crud: CRUD = Depends(),
-    textures_url: str = Depends(get_textures_url),
 ):
     return await get_user_texture_history(user, limit, at, crud, textures_url)
 
 
 @router.get("/history/{user_id}", response_model=schemas.UserTextureHistory)
 async def get_user_texture_history_by_uuid(
+    crud: Annotated[CRUD, Depends()],
+    textures_url: Annotated[str, Depends(get_textures_url)],
     user_id: UUID,
     limit: int | None = None,
     at: datetime | None = None,
-    crud: CRUD = Depends(),
-    textures_url: str = Depends(get_textures_url),
 ):
     user = await crud.get_user_by_uuid(user_id)
     if user is None:

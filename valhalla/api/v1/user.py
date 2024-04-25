@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Annotated
 from urllib.parse import urljoin
 from uuid import UUID
 
@@ -12,16 +13,19 @@ from .utils import get_textures_url
 router = APIRouter(tags=["User information"])
 
 
-async def resolve_user(user_id: UUID = Path(), crud: CRUD = Depends()):
+async def resolve_user(
+    crud: Annotated[CRUD, Depends()],
+    user_id: Annotated[UUID, Path()],
+):
     return await crud.get_user_by_uuid(user_id)
 
 
 @router.get("/user/{user_id}", response_model=schemas.UserTextures)
 async def get_user_textures_by_uuid(
-    user: models.User | None = Depends(resolve_user),
+    textures_url: Annotated[str, Depends(get_textures_url)],
+    crud: Annotated[CRUD, Depends()],
+    user: Annotated[models.User | None, Depends(resolve_user)],
     at: datetime | None = None,
-    crud: CRUD = Depends(),
-    textures_url: str = Depends(get_textures_url),
 ) -> schemas.UserTextures:
     """Get the currently logged in user information."""
     if user is None:

@@ -4,7 +4,7 @@
 from collections import defaultdict
 from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import Iterator, cast
+from typing import Annotated, Iterator, cast
 from uuid import UUID
 
 from fastapi import Depends
@@ -20,7 +20,7 @@ from .db import get_db
 
 
 class CRUD:
-    def __init__(self, db: AsyncSession = Depends(get_db)) -> None:
+    def __init__(self, db: Annotated[AsyncSession, Depends(get_db)]) -> None:
         self.db = db
 
     async def get_user(self, user_id: int) -> models.User | None:

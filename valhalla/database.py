@@ -14,7 +14,7 @@ from typing import (
 from sqlalchemy import Column, ForeignKey, Integer, MetaData
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import RelationshipProperty, relationship, sessionmaker
 
 from .config import settings
 
@@ -48,7 +48,7 @@ class BaseC(Protocol[B_co, T]):
 
 
 C: TypeAlias = BaseC[Column, T]
-R: TypeAlias = BaseC[relationship, T]
+R: TypeAlias = BaseC[RelationshipProperty, T]
 
 
 @overload

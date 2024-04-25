@@ -1,5 +1,6 @@
 import secrets
 from datetime import timedelta
+from typing import Annotated
 
 from authlib.integrations.starlette_client import OAuth, OAuthError, StarletteOAuth2App
 from expiringdict import ExpiringDict
@@ -33,8 +34,8 @@ def get_client_ip(request: Request) -> str:
 
 @router.post("/auth/minecraft", response_model=LoginMinecraftHandshakeResponse)
 async def minecraft_login(
-    name: str = Form(),
-    client: str = Depends(get_client_ip),
+    client: Annotated[str, Depends(get_client_ip)],
+    name: Annotated[str, Form()],
 ) -> LoginMinecraftHandshakeResponse:
     # Generate a random 32 bit integer. It will be checked later.
     verify_token = secrets.randbits(32)
@@ -49,10 +50,10 @@ async def minecraft_login(
 @router.post("/auth/minecraft/callback", response_model=LoginResponse)
 async def minecraft_login_callback(
     response: Response,
-    name: str = Form(),
-    verify_token: int = Form(alias="verifyToken"),
-    crud: CRUD = Depends(),
-    client: str = Depends(get_client_ip),
+    crud: Annotated[CRUD, Depends()],
+    client: Annotated[str, Depends(get_client_ip)],
+    name: Annotated[str, Form()],
+    verify_token: Annotated[int, Form(alias="verifyToken")],
 ) -> LoginResponse:
     if verify_token not in validate_tokens:
         raise HTTPException(403)
@@ -103,7 +104,7 @@ async def xbox_login(request: Request):
 
 
 @router.api_route("/auth/xbox/callback")
-async def xbox_login_callback(request: Request, crud: CRUD = Depends()):
+async def xbox_login_callback(request: Request, crud: Annotated[CRUD, Depends()]):
     if not request.client:
         raise HTTPException(400)
     try:
@@ -126,4 +127,4 @@ async def xbox_login_callback(request: Request, crud: CRUD = Depends()):
         await crud.db.commit()
         return response
     except (OAuthError, xbox.XboxLoginError) as e:
-        raise HTTPException(403, str(e))
+        raise HTTPException(403, str(e)) from None

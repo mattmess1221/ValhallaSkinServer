@@ -1,4 +1,4 @@
-from typing import AsyncIterable
+from typing import Annotated, AsyncIterable
 
 import anyio
 import httpx
@@ -24,9 +24,9 @@ max_upload_size = 5 * mb
 
 @router.get("/textures")
 async def get_texture(
-    user: models.User = Depends(require_user),
-    crud: CRUD = Depends(),
-    textures_url: str = Depends(get_textures_url),
+    user: Annotated[models.User, Depends(require_user)],
+    crud: Annotated[CRUD, Depends()],
+    textures_url: Annotated[str, Depends(get_textures_url)],
 ):
     user_texts = await get_user_textures(user, None, crud, textures_url)
     return user_texts.textures
@@ -41,7 +41,7 @@ async def download_file(url: str, max_size: int) -> bytes:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Error fetching file: {e}",
-            )
+            ) from None
 
         file_size = head_response.headers.get("content-length")
         if not file_size:
@@ -72,7 +72,9 @@ async def read_upload(file: AsyncIterable[bytes], file_size: int):
         return await temp.read()
 
 
-async def valid_content_length(content_length: int = Header(..., le=max_upload_size)):
+async def valid_content_length(
+    content_length: Annotated[int, Header(le=max_upload_size)],
+):
     return content_length
 
 
@@ -83,25 +85,25 @@ async def iter_upload_file(file: UploadFile):
 
 @router.post("/textures")
 async def post_texture(
-    texture: schemas.TexturePost,
-    user: models.User = Depends(require_user),
-    crud: CRUD = Depends(),
-    files: Files = Depends(),
+    crud: Annotated[CRUD, Depends()],
+    files: Annotated[Files, Depends()],
+    user: Annotated[models.User, Depends(require_user)],
+    body: schemas.TexturePost,
 ):
-    file = await download_file(texture.file, max_upload_size)
-    await upload_file(user, texture.type, file, texture.metadata, crud, files)
+    file = await download_file(body.file, max_upload_size)
+    await upload_file(user, body.type, file, body.metadata, crud, files)
     await crud.db.commit()
 
 
 @router.put("/textures")
 async def put_texture(
-    type: str = Form("skin"),
-    file: UploadFile = File(),
-    file_size: int = Depends(valid_content_length),
-    meta: dict[str, str] | None = Form(None),
-    user: models.User = Depends(require_user),
-    crud: CRUD = Depends(),
-    files: Files = Depends(),
+    crud: Annotated[CRUD, Depends()],
+    files: Annotated[Files, Depends()],
+    user: Annotated[models.User, Depends(require_user)],
+    file: Annotated[UploadFile, File()],
+    file_size: Annotated[int, Depends(valid_content_length)],
+    type: Annotated[str, Form()] = "skin",
+    meta: Annotated[dict[str, str] | None, Form()] = None,
 ):
     body = await read_upload(iter_upload_file(file), file_size)
     await upload_file(user, type, body, meta, crud, files)
@@ -134,8 +136,8 @@ class DeleteTexture(BaseModel):
 @router.delete("/texture")
 async def delete_texture(
     texture: DeleteTexture,
-    user: models.User = Depends(require_user),
-    crud: CRUD = Depends(),
+    user: Annotated[models.User, Depends(require_user)],
+    crud: Annotated[CRUD, Depends()],
 ):
     await crud.put_texture(user, texture.type, None)
     await crud.db.commit()

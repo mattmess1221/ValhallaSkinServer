@@ -1,4 +1,4 @@
-from typing import Iterator
+from typing import Annotated, Iterator
 
 import fs
 from fastapi import Depends
@@ -13,7 +13,7 @@ def get_filesystem() -> Iterator[FS]:
 
 
 class Files:
-    def __init__(self, filesystem: FS = Depends(get_filesystem)) -> None:
+    def __init__(self, filesystem: Annotated[FS, Depends(get_filesystem)]) -> None:
         self.fs = filesystem
 
     def put_file(self, skin_hash: str, file: bytes) -> None:

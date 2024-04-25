@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Annotated
 
 from fastapi import Cookie, Depends, HTTPException
 from fastapi.security import OAuth2
@@ -13,9 +14,9 @@ auth_scheme = OAuth2(auto_error=False)
 
 
 async def current_user(
-    header: str | None = Depends(auth_scheme),
-    cookie: str | None = Cookie(default=None, alias="token"),
-    crud: CRUD = Depends(),
+    crud: Annotated[CRUD, Depends()],
+    header: Annotated[str | None, Depends(auth_scheme)],
+    cookie: Annotated[str | None, Cookie(alias="token")] = None,
 ) -> models.User | None:
     if header and header.startswith("Bearer "):
         header = header[7:]
@@ -29,7 +30,9 @@ async def current_user(
         return None
 
 
-def require_user(user: models.User | None = Depends(current_user)) -> models.User:
+def require_user(
+    user: Annotated[models.User | None, Depends(current_user)],
+) -> models.User:
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED)
     return user

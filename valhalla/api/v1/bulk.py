@@ -1,3 +1,4 @@
+from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from valhalla.api.v1.utils import get_textures_url
@@ -12,7 +13,7 @@ router = APIRouter(tags=["User information"])
 @router.post("/bulk_textures", response_model=BulkResponse)
 async def bulk_request_textures(
     body: BulkRequest,
-    crud: CRUD = Depends(),
+    crud: Annotated[CRUD, Depends()],
     textures_url: str = Depends(get_textures_url),
 ):
     """Bulk request several user textures.

@@ -9,7 +9,7 @@ def gen_skin_hash(image_data: bytes) -> str:
     try:
         image = Image.open(BytesIO(image_data))
     except UnidentifiedImageError as e:
-        raise HTTPException(400, str(e))
+        raise HTTPException(400, str(e)) from None
 
     if image.format != "PNG":
         raise HTTPException(400, "Unsupported image format")
