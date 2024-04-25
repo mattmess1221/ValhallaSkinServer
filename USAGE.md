@@ -29,6 +29,7 @@ There are three steps involved to authenticate with Mojang.
 3. Server Callback - Exchange player name and verifyToken for an auth token
 
 To start the authentication process via Minecraft, you will need the following information:
+
 - The player's username
 - The player's access token
 
