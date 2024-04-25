@@ -11,7 +11,7 @@ ENV PDM_CHECK_UPDATE=False \
     PDM_PEP517_SCM_VERSION=$SOURCE_VERSION \
     PDM_USE_VENV=False
 
-RUN pip install -q pdm==2.10.4
+RUN pip install -q pdm==2.15.1
 
 COPY pyproject.toml pdm.lock README.md /project/
 COPY valhalla USAGE.md /project/valhalla/

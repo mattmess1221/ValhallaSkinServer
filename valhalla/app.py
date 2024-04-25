@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from typing import Awaitable, Callable
 from urllib.parse import urlparse
 
@@ -15,7 +16,8 @@ from .config import settings
 from .database import engine
 
 
-async def app_lifespan():
+@asynccontextmanager
+async def app_lifespan(app: FastAPI):
     session: AsyncSession
     async with engine.begin() as session:  # type: ignore
         await session.run_sync(models.Base.metadata.create_all)
