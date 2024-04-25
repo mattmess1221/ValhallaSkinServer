@@ -12,7 +12,7 @@ from ..config import resolve_db
         ],
         [
             "postgres://user:pass@host:1234/dbname",
-            "postgresql+asyncpg://user:pass@host:1234/dbname",
+            "postgresql+psycopg://user:pass@host:1234/dbname",
         ],
     ],
 )
