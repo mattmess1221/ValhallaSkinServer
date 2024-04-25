@@ -1,4 +1,5 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Depends
 
 from valhalla.api.v1.utils import get_textures_url

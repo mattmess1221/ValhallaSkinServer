@@ -109,4 +109,4 @@ ignore_errors = true
 target-version = 'py310'
 
 [tool.ruff.lint]
-select = ["F", "E", "W", "B", "SIM"]
+select = ["F", "E", "W", "B", "SIM", "I"]

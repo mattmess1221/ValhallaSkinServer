@@ -3,9 +3,8 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import File, Form, UploadFile
-from pydantic import AnyHttpUrl
+from pydantic import AnyHttpUrl, Field
 from pydantic import BaseModel as PydanticBaseModel
-from pydantic import Field
 from pydantic.utils import to_lower_camel
 
 openapi_type_fixes = {
