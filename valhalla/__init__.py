@@ -1,7 +1,5 @@
-from importlib import resources
+from importlib import metadata, resources
 from pathlib import Path
-
-from .__version__ import __version__
 
 __all__ = [
     "__version__",
@@ -16,8 +14,5 @@ def _read_text(path: str):
     return resources.read_text(__name__, path)
 
 
+__version__ = metadata.version(__name__)
 __usage__ = _read_text("USAGE.md")
-# check if it's a git tag.
-# a git tag will not be dev or formatted x.y.z
-if "." not in __version__ != "dev":
-    __version__ = f"git ({__version__[:6]})"

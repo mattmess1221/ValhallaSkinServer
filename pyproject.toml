@@ -1,6 +1,6 @@
 [project]
 name = "valhalla"
-dynamic = ["version"]
+version = "1.1.0"
 description = "An alternative skin server for Minecraft supporting metadata and hd textures"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [
@@ -36,10 +36,6 @@ requires = ["pdm-pep517>=1.0.0"]
 build-backend = "pdm.pep517.api"
 
 [tool.pdm]
-[tool.pdm.version]
-source = "scm"
-write_to = "valhalla/__version__.py"
-write_template = "__version__ = '{}'"
 
 [tool.pdm.scripts]
 dev.cmd = "uvicorn valhalla.app:app --reload"
