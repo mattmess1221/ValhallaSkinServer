@@ -34,21 +34,17 @@ T_co = TypeVar("T_co", covariant=True)
 
 class SQLType(Protocol[T_co]):
     @property
-    def python_type(self) -> T_co:
-        ...
+    def python_type(self) -> T_co: ...
 
 
 class BaseC(Protocol[B_co, T]):
     @overload
-    def __get__(self, instance: None, owner: type[Any]) -> B_co:
-        ...
+    def __get__(self, instance: None, owner: type[Any]) -> B_co: ...
 
     @overload
-    def __get__(self, instance: Any, owner: type[Any]) -> T:
-        ...
+    def __get__(self, instance: Any, owner: type[Any]) -> T: ...
 
-    def __set__(self, instance: Any, value: T) -> None:
-        ...
+    def __set__(self, instance: Any, value: T) -> None: ...
 
 
 C: TypeAlias = BaseC[Column, T]
@@ -58,20 +54,17 @@ R: TypeAlias = BaseC[relationship, T]
 @overload
 def col(
     typ: type[SQLType[T]], *args, default: None, primary_key: Literal[True], **kwargs
-) -> C[T]:
-    ...
+) -> C[T]: ...
 
 
 @overload
 def col(
     typ: type[SQLType[T]], *args, default: Default | Callable[[], Default], **kwargs
-) -> C[T | Default]:
-    ...
+) -> C[T | Default]: ...
 
 
 @overload
-def col(typ: type[SQLType[T]], *args, **kwargs) -> C[T]:
-    ...
+def col(typ: type[SQLType[T]], *args, **kwargs) -> C[T]: ...
 
 
 def col(typ: type[SQLType[Any]], *args, **kwargs) -> C[Any]:
@@ -90,13 +83,13 @@ def pk(*, default: None, **kwargs) -> C[int]:
 
 
 @overload
-def fk(ref: str, *, nullable: Literal[True], default: None, **kwargs) -> C[int | None]:
-    ...
+def fk(
+    ref: str, *, nullable: Literal[True], default: None, **kwargs
+) -> C[int | None]: ...
 
 
 @overload
-def fk(ref: str, *, nullable: Literal[False], default: None, **kwargs) -> C[int]:
-    ...
+def fk(ref: str, *, nullable: Literal[False], default: None, **kwargs) -> C[int]: ...
 
 
 def fk(ref: str, **kwargs) -> Any:

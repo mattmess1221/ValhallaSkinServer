@@ -36,7 +36,6 @@ async def minecraft_login(
     name: str = Form(),
     client: str = Depends(get_client_ip),
 ) -> LoginMinecraftHandshakeResponse:
-
     # Generate a random 32 bit integer. It will be checked later.
     verify_token = secrets.randbits(32)
     validate_tokens[verify_token] = name, client

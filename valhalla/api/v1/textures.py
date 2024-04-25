@@ -33,7 +33,6 @@ async def get_texture(
 
 
 async def download_file(url: str, max_size: int) -> bytes:
-
     async with httpx.AsyncClient() as http:
         try:
             head_response = await http.head(url)

@@ -169,8 +169,7 @@ async def compose(
     payload: T1,
     func1: Callable[[T1], Awaitable[T2]],
     /,
-) -> T2:
-    ...
+) -> T2: ...
 
 
 @overload
@@ -179,8 +178,7 @@ async def compose(
     func1: Callable[[T1], Awaitable[T2]],
     func2: Callable[[T2], Awaitable[T3]],
     /,
-) -> T3:
-    ...
+) -> T3: ...
 
 
 @overload
@@ -190,8 +188,7 @@ async def compose(
     func2: Callable[[T2], Awaitable[T3]],
     func3: Callable[[T3], Awaitable[T4]],
     /,
-) -> T4:
-    ...
+) -> T4: ...
 
 
 @overload
@@ -202,8 +199,7 @@ async def compose(
     func3: Callable[[T3], Awaitable[T4]],
     func4: Callable[[T4], Awaitable[T5]],
     /,
-) -> T5:
-    ...
+) -> T5: ...
 
 
 async def compose(payload: Any, *funcs: Callable[[Any], Awaitable[Any]]) -> Any:

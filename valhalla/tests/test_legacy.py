@@ -52,7 +52,6 @@ async def test_legacy_upload_wrong_user(
 async def test_legacy_v0(
     file: str | Path, hash_url: str, client: TestClient, user: TestUser
 ):
-
     kwargs = build_request_kwargs(file)
     resp = await client.open(
         f"/api/user/{user.uuid}/skin", headers=user.auth_header, **kwargs
