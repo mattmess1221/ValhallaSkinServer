@@ -6,7 +6,7 @@ from pydantic import AnyHttpUrl, BaseSettings, Field
 
 async_sql_drivers = {
     "sqlite": "sqlite+aiosqlite",
-    "postgres": "postgresql+asyncpg",
+    "postgres": "postgresql+psycopg",
 }
 
 
@@ -41,10 +41,10 @@ class Settings(BaseSettings):
     env: Env = Env.PRODUCTION
     debug: bool = False
 
-    texture_type_denylist: list[str] = ["cape"]
+    texture_type_denylist: frozenset[str] = frozenset({"cape"})
 
     secret_key: str = "dev"
-    database_url = "sqlite:///./valhalla.db"
+    database_url: str = "sqlite:///./valhalla.db"
 
     # TODO this should be saved in the database
     server_id: str = Field(default_factory=generate_server_id)
