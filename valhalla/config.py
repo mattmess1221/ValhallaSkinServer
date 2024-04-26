@@ -2,7 +2,8 @@ import secrets
 from enum import Enum
 from urllib.parse import urlparse
 
-from pydantic import AnyHttpUrl, BaseSettings, Field
+from pydantic import AnyHttpUrl, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 async_sql_drivers = {
     "sqlite": "sqlite+aiosqlite",
@@ -10,7 +11,7 @@ async_sql_drivers = {
 }
 
 
-def resolve_db(url: str):
+def resolve_db(url: str) -> str:
     url_parts = urlparse(url)
     if url_parts.scheme in async_sql_drivers:
         url_parts = url_parts._replace(scheme=async_sql_drivers[url_parts.scheme])
@@ -64,13 +65,16 @@ class Settings(BaseSettings):
         return resolve_db(self.database_url)
 
     def get_textures_url(self) -> str | None:
-        url: str | None = self.textures_url
-        if url and not url.endswith("/"):
-            url += "/"
+        url = self.textures_url
+        if url:
+            url = str(url)
+            if not url.endswith("/"):
+                url += "/"
         return url
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+    )
 
 
-settings = Settings()  # type: ignore
+settings = Settings()

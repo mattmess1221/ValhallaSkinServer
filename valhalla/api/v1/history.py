@@ -14,25 +14,25 @@ from ...crud import CRUD
 router = APIRouter(tags=["User History"])
 
 
-@router.get("/history", response_model=schemas.UserTextureHistory)
+@router.get("/history")
 async def get_current_user_texture_history(
     user: Annotated[models.User, Depends(require_user)],
     crud: Annotated[CRUD, Depends()],
     textures_url: Annotated[str, Depends(get_textures_url)],
     limit: int | None = None,
     at: datetime | None = None,
-):
+) -> schemas.UserTextureHistory:
     return await get_user_texture_history(user, limit, at, crud, textures_url)
 
 
-@router.get("/history/{user_id}", response_model=schemas.UserTextureHistory)
+@router.get("/history/{user_id}")
 async def get_user_texture_history_by_uuid(
     crud: Annotated[CRUD, Depends()],
     textures_url: Annotated[str, Depends(get_textures_url)],
     user_id: UUID,
     limit: int | None = None,
     at: datetime | None = None,
-):
+) -> schemas.UserTextureHistory:
     user = await crud.get_user_by_uuid(user_id)
     if user is None:
         raise HTTPException(404)

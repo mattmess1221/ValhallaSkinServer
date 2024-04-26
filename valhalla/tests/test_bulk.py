@@ -29,7 +29,7 @@ def test_bulk_users(client: TestClient, users: list[TestUser]):
         )
         assert resp.status_code == 200
 
-    uuids = [str(u.uuid).replace("-", "") for u in users]
+    uuids = [str(u.uuid) for u in users]
 
     resp = client.post("/api/v1/bulk_textures", json={"uuids": uuids})
     assert resp.status_code == 200

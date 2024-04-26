@@ -27,7 +27,7 @@ async def get_texture(
     user: Annotated[models.User, Depends(require_user)],
     crud: Annotated[CRUD, Depends()],
     textures_url: Annotated[str, Depends(get_textures_url)],
-):
+) -> dict[str, schemas.Texture]:
     user_texts = await get_user_textures(user, None, crud, textures_url)
     return user_texts.textures
 
@@ -90,7 +90,7 @@ async def post_texture(
     user: Annotated[models.User, Depends(require_user)],
     body: schemas.TexturePost,
 ):
-    file = await download_file(body.file, max_upload_size)
+    file = await download_file(str(body.file), max_upload_size)
     await upload_file(user, body.type, file, body.metadata, crud, files)
     await crud.db.commit()
 

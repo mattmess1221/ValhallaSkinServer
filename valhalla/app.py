@@ -10,7 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 import valhalla
 
-from . import api, models, schemas
+from . import api, models
 from .config import settings
 from .database import engine
 
@@ -67,6 +67,3 @@ if parsed_textures_url.scheme in ("file", None):
     os.makedirs(textures_dir, exist_ok=True)
     static_textures = StaticFiles(directory=textures_dir)
     app.mount("/textures", static_textures, name="textures")
-
-
-schemas.fix_openapi_schema(app.openapi())

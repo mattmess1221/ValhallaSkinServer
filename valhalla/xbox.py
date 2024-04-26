@@ -109,7 +109,7 @@ async def login_with_xbox(xbl_access_token: str) -> MinecraftProfile:
                 },
             )
 
-            return XboxAuth.parse_obj(response.json())
+            return XboxAuth.model_validate(response.json())
 
         async def auth_xsts(xbox_auth: XboxAuth) -> XboxAuth:
             response = await client.post(
@@ -124,9 +124,9 @@ async def login_with_xbox(xbl_access_token: str) -> MinecraftProfile:
                 },
             )
             if response.is_client_error:
-                raise XboxLoginError(XSTSError.parse_obj(response.json()))
+                raise XboxLoginError(XSTSError.model_validate(response.json()))
 
-            return XboxAuth.parse_obj(response.json())
+            return XboxAuth.model_validate(response.json())
 
         async def auth_minecraft_from_xbox(xbox_auth: XboxAuth) -> MinecraftAuth:
             userhash = xbox_auth.DisplayClaims["xui"][0]["uhs"]
@@ -135,14 +135,14 @@ async def login_with_xbox(xbl_access_token: str) -> MinecraftProfile:
                 MC_AUTH_XBOX,
                 json={"identityToken": f"XBL3.0 x={userhash};{xsts_token}"},
             )
-            return MinecraftAuth.parse_obj(response.json())
+            return MinecraftAuth.model_validate(response.json())
 
         async def get_minecraft_profile(mc_auth: MinecraftAuth) -> MinecraftProfile:
             response = await client.get(
                 MC_PROFILE,
                 headers={"Authorization": f"Bearer {mc_auth.access_token}"},
             )
-            return MinecraftProfile.parse_obj(response.json())
+            return MinecraftProfile.model_validate(response.json())
 
         async def login(xbl_access_token: str) -> MinecraftProfile:
             """Start the lengthy authorization process."""

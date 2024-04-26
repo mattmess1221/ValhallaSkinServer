@@ -20,7 +20,7 @@ async def resolve_user(
     return await crud.get_user_by_uuid(user_id)
 
 
-@router.get("/user/{user_id}", response_model=schemas.UserTextures)
+@router.get("/user/{user_id}")
 async def get_user_textures_by_uuid(
     textures_url: Annotated[str, Depends(get_textures_url)],
     crud: Annotated[CRUD, Depends()],

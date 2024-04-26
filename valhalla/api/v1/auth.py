@@ -32,7 +32,7 @@ def get_client_ip(request: Request) -> str:
     return request.headers.get("X-Forwarded-For", request.client.host)
 
 
-@router.post("/auth/minecraft", response_model=LoginMinecraftHandshakeResponse)
+@router.post("/auth/minecraft")
 async def minecraft_login(
     client: Annotated[str, Depends(get_client_ip)],
     name: Annotated[str, Form()],
@@ -47,7 +47,7 @@ async def minecraft_login(
     )
 
 
-@router.post("/auth/minecraft/callback", response_model=LoginResponse)
+@router.post("/auth/minecraft/callback")
 async def minecraft_login_callback(
     response: Response,
     crud: Annotated[CRUD, Depends()],

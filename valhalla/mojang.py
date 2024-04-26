@@ -31,5 +31,5 @@ async def has_joined(*, username: str, server_id: str) -> HasJoinedResponse:
             except ValueError:
                 pass
             else:
-                return HasJoinedResponse.parse_obj(data)
+                return HasJoinedResponse.model_validate(data)
         raise HTTPException(401)

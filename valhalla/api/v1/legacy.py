@@ -67,7 +67,7 @@ async def post_skin_old(
     form = await request.form()
     meta = {k: v for k, v in form.items() if isinstance(v, str)}
     body = schemas.TexturePost(type=skin_type, file=file, metadata=meta)
-    return await textures.post_texture(body=body, user=user, crud=crud, files=files)
+    await textures.post_texture(body=body, user=user, crud=crud, files=files)
 
 
 @router.put("/user/{user_id}/{skin_type}", tags=["Texture Uploads"])
@@ -87,7 +87,7 @@ async def put_skin_old(
 
     form = await request.form()
     meta = {k: v for k, v in form.items() if isinstance(v, str)}
-    return await textures.put_texture(
+    await textures.put_texture(
         crud=crud,
         files=files,
         user=user,
