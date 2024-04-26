@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timezone
+from functools import partial
 from typing import Annotated
 from uuid import UUID
 
@@ -57,7 +58,7 @@ class Texture(BaseModel):
 
 
 class UserTextures(BaseModel):
-    timestamp: Timestamp = Field(default_factory=datetime.now)
+    timestamp: Timestamp = Field(default_factory=partial(datetime.now, timezone.utc))
     profile_id: UUID
     profile_name: str
     textures: dict[str, Texture]

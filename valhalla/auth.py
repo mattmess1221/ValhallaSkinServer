@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import Cookie, Depends, HTTPException
@@ -41,8 +41,8 @@ def require_user(
 def token_from_user(user: models.User, *, expire_in: timedelta) -> str:
     payload = {
         "sid": user.id,
-        "iat": datetime.utcnow(),
-        "exp": datetime.utcnow() + expire_in,
+        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(timezone.utc) + expire_in,
     }
     return jwt.encode(payload, settings.secret_key, algorithm="HS256")
 

@@ -3,7 +3,7 @@
 # pyright: reportGeneralTypeIssues=false
 from collections import defaultdict
 from collections.abc import AsyncIterator
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Iterator, cast
 from uuid import UUID
 
@@ -132,7 +132,7 @@ class CRUD:
                 models.Texture.user_id == user.id,
                 models.Texture.tex_type == tex_type,
             )
-            .values({models.Texture.end_time: datetime.now()}),
+            .values({models.Texture.end_time: datetime.now(timezone.utc)}),
         )
         if upload:
             self.db.add(
