@@ -3,7 +3,7 @@ from .conftest import TestClient, TestUser, assets
 test_skin = assets / "good" / "64x64.png"
 
 
-def test_unknown_bulk_user(client: TestClient, user: TestUser):
+def test_unknown_bulk_user(client: TestClient, user: TestUser) -> None:
     resp = client.post(
         "/api/v1/bulk_textures",
         json={
@@ -17,7 +17,7 @@ def test_unknown_bulk_user(client: TestClient, user: TestUser):
     assert len(data["users"]) == 0
 
 
-def test_bulk_users(client: TestClient, users: list[TestUser]):
+def test_bulk_users(client: TestClient, users: list[TestUser]) -> None:
     # setup
     for u in users:
         resp = client.put(

@@ -10,7 +10,7 @@ from pydantic.alias_generators import to_camel
 from pydantic.functional_serializers import PlainSerializer
 
 
-def serialize_datetime(dt: datetime):
+def serialize_datetime(dt: datetime) -> int:
     # convert to milliseconds
     return int(dt.timestamp() * 1000)
 

@@ -1,13 +1,15 @@
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any, AsyncGenerator, Generator, Literal
 from uuid import UUID, uuid4
 
 import pytest
 from fastapi import Depends, FastAPI, Header
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from valhalla.models import User
 
 from ..app import app
 from ..auth import current_user
@@ -29,7 +31,7 @@ TestingSessionLocal = async_sessionmaker[AsyncSession](engine)
 
 
 @asynccontextmanager
-async def app_lifespan(app: FastAPI):
+async def app_lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
     async with engine.begin() as conn:
         await conn.run_sync(reg.metadata.create_all)
     yield
@@ -38,7 +40,7 @@ async def app_lifespan(app: FastAPI):
 app.router.lifespan_context = app_lifespan
 
 
-async def override_get_db():
+async def override_get_db() -> AsyncGenerator[AsyncSession, Any]:
     async with TestingSessionLocal() as session:
         yield session
 
@@ -49,7 +51,7 @@ app.dependency_overrides[get_db] = override_get_db
 async def override_current_user(
     crud: Annotated[CRUD, Depends()],
     authorization: Annotated[str | None, Header()] = None,
-):
+) -> User | None:
     if authorization:
         uname, userid = authorization.split(":")
         uid = UUID(userid)
@@ -64,14 +66,14 @@ app.dependency_overrides[current_user] = override_current_user
 
 
 @pytest.fixture
-def client(tmpdir: Path):
+def client(tmpdir: Path) -> Generator[TestClient, Any, None]:
     settings.textures_fs = f"file://{tmpdir}"
     with TestClient(app) as client:
         yield client
 
 
 @pytest.fixture(autouse=True)
-def anyio_backend():
+def anyio_backend() -> Literal["asyncio"]:
     return "asyncio"
 
 
@@ -83,16 +85,16 @@ class TestUser:
     __test__ = False
 
     @property
-    def auth_header(self):
+    def auth_header(self) -> dict[str, str]:
         return {"authorization": f"{self.name}:{self.uuid}"}
 
 
 @pytest.fixture
-def user():
+def user() -> TestUser:
     return TestUser(uuid4(), "TestUser")
 
 
 @pytest.fixture
-def users():
+def users() -> list[TestUser]:
     """Fixture to get a list of random users"""
     return [TestUser(uuid4(), f"TestUser{n}") for n in range(1, 11)]

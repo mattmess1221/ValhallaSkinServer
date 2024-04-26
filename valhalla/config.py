@@ -27,11 +27,11 @@ class Env(Enum):
     TESTING = "test"
 
     @property
-    def isprod(self):
+    def isprod(self) -> bool:
         return self is Env.PRODUCTION
 
 
-def generate_server_id():
+def generate_server_id() -> str:
     s = secrets.token_urlsafe(20)
     s = s.replace("_", "")
     s = s.replace("-", "")

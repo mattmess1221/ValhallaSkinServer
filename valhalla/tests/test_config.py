@@ -16,5 +16,5 @@ from ..config import resolve_db
         ],
     ],
 )
-def test_database_url(url, expected):
+def test_database_url(url: str, expected: str) -> None:
     assert resolve_db(url) == expected

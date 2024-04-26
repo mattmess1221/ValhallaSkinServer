@@ -7,7 +7,7 @@ __all__ = [
 ]
 
 
-def _read_text(path: str):
+def _read_text(path: str) -> str:
     p = Path(path)
     if p.exists():
         return p.read_text()

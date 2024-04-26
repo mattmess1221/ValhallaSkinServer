@@ -111,7 +111,7 @@ class CRUD:
         )
         return results.one_or_none()
 
-    async def put_upload(self, user: models.User, texture_hash: str):
+    async def put_upload(self, user: models.User, texture_hash: str) -> models.Upload:
         upload = models.Upload(
             hash=texture_hash,
             user_id=user.id,
@@ -125,7 +125,7 @@ class CRUD:
         tex_type: str,
         upload: models.Upload | None,
         meta: dict[str, str] | None = None,
-    ):
+    ) -> None:
         await self.db.execute(
             update(models.Texture)
             .where(

@@ -20,7 +20,7 @@ validate_tokens: dict[int, tuple[str, str]] = ExpiringDict(100, 30)
 
 
 @router.get("/auth/logout", status_code=302)
-async def logout():
+async def logout() -> RedirectResponse:
     response = RedirectResponse("/", status_code=302)
     response.delete_cookie("token")
     return response
@@ -97,14 +97,16 @@ xboxlive: StarletteOAuth2App = OAuth().register(
 
 
 @router.api_route("/auth/xbox")
-async def xbox_login(request: Request):
+async def xbox_login(request: Request) -> RedirectResponse:
     callback = str(request.url_for("xbox_login_callback"))
     callback = callback.replace("http://127.0.0.1", "http://localhost")
     return await xboxlive.authorize_redirect(request, callback)
 
 
 @router.api_route("/auth/xbox/callback")
-async def xbox_login_callback(request: Request, crud: Annotated[CRUD, Depends()]):
+async def xbox_login_callback(
+    request: Request, crud: Annotated[CRUD, Depends()]
+) -> RedirectResponse:
     if not request.client:
         raise HTTPException(400)
     try:

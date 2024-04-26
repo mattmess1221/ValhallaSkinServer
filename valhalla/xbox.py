@@ -36,7 +36,7 @@ class XSTSError(BaseModel):
     Redirect: str
 
 
-def get_x_error_message(err: XSTSError):
+def get_x_error_message(err: XSTSError) -> str:
     return x_error_messages.get(err.XErr, x_default_error_message)
 
 

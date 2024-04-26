@@ -58,7 +58,7 @@ async def post_skin_old(
     crud: Annotated[CRUD, Depends()],
     files: Annotated[Files, Depends()],
     skin_type: str,
-):
+) -> None:
     """Upload a skin texture from a url
 
     Deprecated: Use the /textures endpoint to upload skins
@@ -79,7 +79,7 @@ async def put_skin_old(
     file: Annotated[UploadFile, File()],
     file_size: Annotated[int, Depends(textures.valid_content_length)],
     skin_type: str,
-):
+) -> None:
     """Upload a skin texture from a file
 
     Deprecated: Use the /textures endpoint to upload skins
@@ -103,6 +103,6 @@ async def delete_skin_old(
     user: Annotated[models.User, Depends(check_user)],
     crud: Annotated[CRUD, Depends()],
     skin_type: str,
-):
+) -> None:
     texture = textures.DeleteTexture(type=skin_type)
     await textures.delete_texture(texture, user, crud)

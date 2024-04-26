@@ -21,7 +21,7 @@ def build_request_kwargs(file: str | Path) -> tuple[str, dict]:
     "file",
     [steve_file, steve_url],
 )
-def test_legacy_upload(file: str | Path, client: TestClient, user: TestUser):
+def test_legacy_upload(file: str | Path, client: TestClient, user: TestUser) -> None:
     method, kwargs = build_request_kwargs(file)
     resp = client.request(
         method, f"/api/v1/user/{user.uuid}/skin", headers=user.auth_header, **kwargs
@@ -33,7 +33,9 @@ def test_legacy_upload(file: str | Path, client: TestClient, user: TestUser):
     "file",
     [steve_file, steve_url],
 )
-def test_legacy_upload_wrong_user(file: str | Path, client: TestClient, user: TestUser):
+def test_legacy_upload_wrong_user(
+    file: str | Path, client: TestClient, user: TestUser
+) -> None:
     method, kwargs = build_request_kwargs(file)
     resp = client.request(
         method, f"/api/v1/user/{uuid4()}/skin", headers=user.auth_header, **kwargs
@@ -45,7 +47,9 @@ def test_legacy_upload_wrong_user(file: str | Path, client: TestClient, user: Te
     "file, hash_url",
     [(steve_file, steve_hash), (steve_url, steve_hash)],
 )
-def test_legacy_v0(file: str | Path, hash_url: str, client: TestClient, user: TestUser):
+def test_legacy_v0(
+    file: str | Path, hash_url: str, client: TestClient, user: TestUser
+) -> None:
     method, kwargs = build_request_kwargs(file)
     resp = client.request(
         method, f"/api/user/{user.uuid}/skin", headers=user.auth_header, **kwargs

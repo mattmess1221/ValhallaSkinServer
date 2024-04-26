@@ -16,7 +16,7 @@ router = APIRouter(tags=["User information"])
 async def resolve_user(
     crud: Annotated[CRUD, Depends()],
     user_id: Annotated[UUID, Path()],
-):
+) -> models.User | None:
     return await crud.get_user_by_uuid(user_id)
 
 
@@ -38,7 +38,7 @@ async def get_user_textures(
     at: datetime | None,
     crud: CRUD,
     textures_url: str,
-):
+) -> schemas.UserTextures:
     textures = await crud.get_user_textures(user, at=at)
     return schemas.UserTextures(
         profile_id=user.uuid,  # type: ignore

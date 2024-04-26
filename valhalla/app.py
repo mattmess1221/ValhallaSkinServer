@@ -1,6 +1,6 @@
 import os
 from contextlib import asynccontextmanager
-from typing import Awaitable, Callable
+from typing import Any, AsyncGenerator, Awaitable, Callable
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request, Response, status
@@ -16,7 +16,7 @@ from .database import engine
 
 
 @asynccontextmanager
-async def app_lifespan(app: FastAPI):
+async def app_lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
     async with engine.begin() as session:
         await session.run_sync(models.reg.metadata.create_all)
 
@@ -49,7 +49,7 @@ async def redirect_http_to_https(
 
 
 @app.api_route("/echo", include_in_schema=False)
-async def echo(request: Request):
+async def echo(request: Request) -> dict[str, Any]:
     return {
         "headers": request.headers,
         "url": str(request.url),

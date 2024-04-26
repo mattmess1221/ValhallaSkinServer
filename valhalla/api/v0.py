@@ -1,3 +1,6 @@
+from collections.abc import Callable, Coroutine
+from typing import Any
+
 from fastapi import APIRouter, Depends
 
 from . import v1
@@ -5,8 +8,8 @@ from . import v1
 router = APIRouter(include_in_schema=False)
 
 
-def message(msg: str):
-    async def view():
+def message(msg: str) -> Callable[[], Coroutine[Any, Any, dict[str, str]]]:
+    async def view() -> dict[str, str]:
         return {"message": msg}
 
     return view

@@ -31,8 +31,8 @@ def build_request_kwargs(file: str | Path) -> tuple[str, dict]:
     ],
 )
 def test_texture_upload_post(
-    file_or_url: Path | str, hash_url, client: TestClient, user: TestUser
-):
+    file_or_url: Path | str, hash_url: str, client: TestClient, user: TestUser
+) -> None:
     method, kwargs = build_request_kwargs(file_or_url)
     upload_resp = client.request(
         method, "/api/v1/textures", headers=user.auth_header, **kwargs
@@ -52,7 +52,7 @@ def test_texture_upload_post(
     assert anon_resp.json()["textures"] == textures
 
 
-def test_unknown_user_textures(client: TestClient, user: TestUser):
+def test_unknown_user_textures(client: TestClient, user: TestUser) -> None:
     resp = client.get(f"/api/v1/user/{user.uuid}")
     assert resp.status_code == 404
 
@@ -61,13 +61,15 @@ def test_unknown_user_textures(client: TestClient, user: TestUser):
     "file_or_url",
     [steve_file, steve_url],
 )
-def test_unauthenticated_user_texture_upload(file_or_url, client: TestClient):
+def test_unauthenticated_user_texture_upload(
+    file_or_url: str, client: TestClient
+) -> None:
     method, kwargs = build_request_kwargs(file_or_url)
     upload_resp = client.request(method, "/api/v1/textures", **kwargs)
     assert upload_resp.status_code == 401, upload_resp.json()
 
 
-def test_non_image_upload(client: TestClient, user: TestUser):
+def test_non_image_upload(client: TestClient, user: TestUser) -> None:
     resp = client.put(
         "/api/v1/textures",
         headers=user.auth_header,
@@ -78,7 +80,7 @@ def test_non_image_upload(client: TestClient, user: TestUser):
     assert "cannot identify image file" in resp.json()["detail"]
 
 
-def test_very_large_upload(client: TestClient, user: TestUser):
+def test_very_large_upload(client: TestClient, user: TestUser) -> None:
     ten_megabytes_of_zeros = b"\0" * 10_000_000
     resp = client.put(
         "/api/v1/textures",
@@ -93,5 +95,5 @@ def test_very_large_upload(client: TestClient, user: TestUser):
     assert resp.status_code == 413, resp.json()  # Request entity too large
 
 
-def test_env():
+def test_env() -> None:
     assert not settings.env.isprod

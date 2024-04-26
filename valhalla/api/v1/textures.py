@@ -1,4 +1,4 @@
-from typing import Annotated, AsyncIterable
+from typing import Annotated, Any, AsyncGenerator, AsyncIterable
 
 import anyio
 import httpx
@@ -60,7 +60,7 @@ async def download_file(url: str, max_size: int) -> bytes:
             return await read_upload(resp.aiter_bytes(), file_size)
 
 
-async def read_upload(file: AsyncIterable[bytes], file_size: int):
+async def read_upload(file: AsyncIterable[bytes], file_size: int) -> bytes:
     real_file_size = 0
     async with TemporaryFile() as temp:
         async for chunk in file:
@@ -74,11 +74,11 @@ async def read_upload(file: AsyncIterable[bytes], file_size: int):
 
 async def valid_content_length(
     content_length: Annotated[int, Header(le=max_upload_size)],
-):
+) -> int:
     return content_length
 
 
-async def iter_upload_file(file: UploadFile):
+async def iter_upload_file(file: UploadFile) -> AsyncGenerator[bytes, Any]:
     while chunk := await file.read(1024):
         yield chunk
 
@@ -89,7 +89,7 @@ async def post_texture(
     files: Annotated[Files, Depends()],
     user: Annotated[models.User, Depends(require_user)],
     body: schemas.TexturePost,
-):
+) -> None:
     file = await download_file(str(body.file), max_upload_size)
     await upload_file(user, body.type, file, body.metadata, crud, files)
     await crud.db.commit()
@@ -104,7 +104,7 @@ async def put_texture(
     file_size: Annotated[int, Depends(valid_content_length)],
     type: Annotated[str, Form()] = "skin",
     meta: Annotated[dict[str, str] | None, Form()] = None,
-):
+) -> None:
     body = await read_upload(iter_upload_file(file), file_size)
     await upload_file(user, type, body, meta, crud, files)
     await crud.db.commit()
@@ -117,7 +117,7 @@ async def upload_file(
     meta: dict[str, str] | None,
     crud: CRUD,
     files: Files,
-):
+) -> None:
     if texture_type in settings.texture_type_denylist:
         raise HTTPException(status.HTTP_400, "That texture type is not allowed")
     texture_hash = await anyio.to_thread.run_sync(image.gen_skin_hash, file)
@@ -138,6 +138,6 @@ async def delete_texture(
     texture: DeleteTexture,
     user: Annotated[models.User, Depends(require_user)],
     crud: Annotated[CRUD, Depends()],
-):
+) -> None:
     await crud.put_texture(user, texture.type, None)
     await crud.db.commit()
