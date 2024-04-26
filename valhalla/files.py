@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from dataclasses import dataclass
 from typing import Annotated
 
 import fs
@@ -13,9 +14,9 @@ def get_filesystem() -> Iterator[FS]:
         yield filesystem
 
 
+@dataclass
 class Files:
-    def __init__(self, filesystem: Annotated[FS, Depends(get_filesystem)]) -> None:
-        self.fs = filesystem
+    fs: Annotated[FS, Depends(get_filesystem)]
 
     def put_file(self, skin_hash: str, file: bytes) -> None:
         """Save a texture to the file system"""

@@ -3,6 +3,7 @@
 # pyright: reportGeneralTypeIssues=false
 from collections import defaultdict
 from collections.abc import AsyncIterator, Iterator
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Annotated, cast
 from uuid import UUID
@@ -19,9 +20,9 @@ from . import models
 from .db import get_db
 
 
+@dataclass
 class CRUD:
-    def __init__(self, db: Annotated[AsyncSession, Depends(get_db)]) -> None:
-        self.db = db
+    db: Annotated[AsyncSession, Depends(get_db)]
 
     async def get_user(self, user_id: int) -> models.User | None:
         result: ScalarResult = await self.db.scalars(
