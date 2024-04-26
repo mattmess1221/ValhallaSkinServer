@@ -53,8 +53,8 @@ spec:
         - name: textures
           mountPath: /project/var/textures
       env:
-        - name: TEXTURES_FS
-          value: file:///./var/textures
+        - name: TEXTURES_PATH
+          value: ./var/textures
       envFrom:
         - configMapRef:
             name: valhalla-config

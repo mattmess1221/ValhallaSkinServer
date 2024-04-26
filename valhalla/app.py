@@ -2,7 +2,6 @@ import os
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any
-from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import RedirectResponse
@@ -62,9 +61,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
 
 app.include_router(api.router, prefix="/api")
 
-parsed_textures_url = urlparse(settings.textures_fs)
-if parsed_textures_url.scheme in ("file", None):
-    textures_dir = parsed_textures_url.path[1:]
-    os.makedirs(textures_dir, exist_ok=True)
-    static_textures = StaticFiles(directory=textures_dir)
+if settings.textures_bucket is None:
+    os.makedirs(settings.textures_path, exist_ok=True)
+    static_textures = StaticFiles(directory=settings.textures_path)
     app.mount("/textures", static_textures, name="textures")

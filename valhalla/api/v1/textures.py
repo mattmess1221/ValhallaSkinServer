@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator, AsyncIterable
 from typing import Annotated, Any
 
-import anyio
+import anyio.to_thread
 import httpx
 from aiofiles.tempfile import TemporaryFile
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile

@@ -7,6 +7,7 @@ import boto3
 import pytest
 from moto import mock_aws
 
+from valhalla.config import Settings
 from valhalla.files import get_filesystem
 
 
@@ -26,27 +27,32 @@ def aws(aws_credentials: None) -> Generator[None, Any, None]:
 
 
 @pytest.fixture(scope="function")
-def s3_filesystem(aws: None) -> str:
+def s3_filesystem(aws: None) -> Settings:
     s3_client = boto3.client("s3")
     s3_client.create_bucket(Bucket="bucket.com")
-    return "s3://bucket.com/path"
+    return Settings(
+        textures_bucket="bucket.com",
+        textures_path="path",
+    )
 
 
 @pytest.fixture(scope="function")
-def local_filesystem(tmpdir: Path) -> str:
-    return f"file:///{tmpdir}"
+def local_filesystem(tmpdir: Path) -> Settings:
+    return Settings(
+        textures_path=str(tmpdir),
+    )
 
 
 @pytest.mark.parametrize(
-    "url",
+    "config_fixture",
     [
         "local_filesystem",
         "s3_filesystem",
     ],
 )
-def test_filesystem(url: str, request: pytest.FixtureRequest) -> None:
-    url = request.getfixturevalue(url)
-    fs = get_filesystem(url)
+def test_filesystem(config_fixture: str, request: pytest.FixtureRequest) -> None:
+    config: Settings = request.getfixturevalue(config_fixture)
+    fs = get_filesystem(config)
     file = fs / "file.txt"
     assert not file.exists()
 

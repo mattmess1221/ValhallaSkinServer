@@ -101,7 +101,7 @@ select = [
     "YTT", "FBT", "ASYNC", "TRIO", "C4", "DTZ",
     "PIE", "RET", "SLF", "TRY", "FLY", "PERF", "RUF"
 ]
-ignore = ["ANN101"]
+ignore = ["ANN1"]
 
 [tool.ruff.lint.flake8-annotations]
 mypy-init-return = true

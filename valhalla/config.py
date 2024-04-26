@@ -49,7 +49,8 @@ class Settings(BaseSettings):
     # TODO this should be saved in the database
     server_id: str = Field(default_factory=generate_server_id)
 
-    textures_fs: str = "file://./textures/"
+    textures_bucket: str | None = None
+    textures_path: str = "./textures"
     textures_url: AnyHttpUrl | None = None
 
     xbox_live_client_id: str | None = None
@@ -74,6 +75,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
     )
+
+
+def get_settings() -> Settings:
+    return Settings()
 
 
 settings = Settings()

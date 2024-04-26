@@ -1,5 +1,4 @@
 import pathlib
-import urllib.parse
 from dataclasses import dataclass
 from io import BytesIO
 from typing import TYPE_CHECKING, Annotated, Any, Protocol
@@ -9,7 +8,7 @@ import botocore.exceptions
 from fastapi import Depends
 from typing_extensions import Self
 
-from .config import settings
+from .config import Settings, get_settings
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -44,26 +43,19 @@ class S3Path:
         return type(self)(self.s3_client, self.bucket, f"{self.path}/{key}")
 
 
-def textures_fs() -> str:
-    return settings.textures_fs
-
-
-def get_filesystem(textures_fs: Annotated[str, Depends(textures_fs)]) -> Filesystem:
-    url = urllib.parse.urlparse(textures_fs)
-
-    if url.scheme == "file":
-        path = pathlib.Path(url.path.removeprefix("/"))
+def get_filesystem(config: Annotated[Settings, Depends(get_settings)]) -> Filesystem:
+    bucket = config.textures_bucket
+    path = config.textures_path
+    if bucket is None:
+        # bucket not set, use local files for storage
+        path = pathlib.Path(config.textures_path)
         if not path.exists():
             path.mkdir(parents=True)
         return path
 
-    if url.scheme == "s3":
-        s3_client = boto3.client("s3")
-        bucket = url.netloc
-        path = url.path
-        return S3Path(s3_client, bucket, path)
-
-    raise NotImplementedError(f"{url.scheme} is not implemented")
+    # use s3 for storage
+    s3_client = boto3.client("s3")
+    return S3Path(s3_client, bucket, path)
 
 
 @dataclass
