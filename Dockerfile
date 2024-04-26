@@ -17,7 +17,7 @@ COPY pyproject.toml pdm.lock README.md /project/
 COPY valhalla USAGE.md /project/valhalla/
 
 WORKDIR /project
-RUN pdm install --prod -G prod --no-lock --no-editable
+RUN pdm install --prod --no-lock --no-editable
 
 FROM python-base
 
