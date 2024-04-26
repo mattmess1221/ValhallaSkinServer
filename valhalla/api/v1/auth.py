@@ -112,6 +112,9 @@ async def xbox_login_callback(
     try:
         token = await xboxlive.authorize_access_token(request)
         profile = await xbox.login_with_xbox(token["access_token"])
+    except (OAuthError, xbox.XboxLoginError) as e:
+        raise HTTPException(403, str(e)) from None
+    else:
         user = await crud.get_or_create_user(profile.id, profile.name)
         expires = timedelta(days=365)
         token = auth.token_from_user(user, expire_in=expires)
@@ -128,5 +131,3 @@ async def xbox_login_callback(
 
         await crud.db.commit()
         return response
-    except (OAuthError, xbox.XboxLoginError) as e:
-        raise HTTPException(403, str(e)) from None

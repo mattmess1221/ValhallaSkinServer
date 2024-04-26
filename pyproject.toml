@@ -95,7 +95,11 @@ ignore_missing_imports = true
 target-version = 'py310'
 
 [tool.ruff.lint]
-select = ["F", "E", "W", "B", "SIM", "I", "ANN", "UP"]
+select = [
+    "F", "E", "W", "B", "SIM", "I", "ANN", "UP",
+    "YTT", "FBT", "ASYNC", "TRIO", "C4", "DTZ",
+    "PIE", "RET", "SLF", "TRY", "FLY", "PERF", "RUF"
+]
 ignore = ["ANN101"]
 
 [tool.ruff.lint.flake8-annotations]

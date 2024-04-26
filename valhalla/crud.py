@@ -27,8 +27,7 @@ class CRUD:
         result: ScalarResult = await self.db.scalars(
             cast(Select, select(models.User)).where(models.User.id == user_id).limit(1)
         )
-        user = result.one_or_none()
-        return user
+        return result.one_or_none()
 
     async def get_user_by_uuid(self, uuid: UUID) -> models.User | None:
         result: ScalarResult = await self.db.scalars(

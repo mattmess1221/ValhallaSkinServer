@@ -34,8 +34,7 @@ class Env(Enum):
 def generate_server_id() -> str:
     s = secrets.token_urlsafe(20)
     s = s.replace("_", "")
-    s = s.replace("-", "")
-    return s
+    return s.replace("-", "")
 
 
 class Settings(BaseSettings):
