@@ -1,4 +1,4 @@
-FROM python:3.10 AS python-base
+FROM python:3.12 AS python-base
 ENV PIP_NO_CACHE_DIR=no \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_ROOT_USER_ACTION=ignore \
@@ -23,7 +23,7 @@ FROM python-base
 
 WORKDIR /project
 
-COPY --from=builder /project/__pypackages__/3.10 /project
+COPY --from=builder /project/__pypackages__/3.12 /project
 COPY alembic.ini /project/etc/valhalla/alembic.ini
 
 ENV PATH=$PATH:/project/bin \

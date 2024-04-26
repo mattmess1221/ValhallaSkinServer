@@ -4,7 +4,7 @@
 from collections import defaultdict
 from collections.abc import AsyncIterator, Iterator
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated, cast
 from uuid import UUID
 
@@ -132,7 +132,7 @@ class CRUD:
                 models.Texture.user_id == user.id,
                 models.Texture.tex_type == tex_type,
             )
-            .values({models.Texture.end_time: datetime.now(timezone.utc)}),
+            .values({models.Texture.end_time: datetime.now(UTC)}),
         )
         if upload:
             self.db.add(

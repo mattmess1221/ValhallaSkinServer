@@ -1,12 +1,11 @@
 import pathlib
 from dataclasses import dataclass
 from io import BytesIO
-from typing import TYPE_CHECKING, Annotated, Any, Protocol
+from typing import TYPE_CHECKING, Annotated, Any, Protocol, Self
 
 import boto3
 import botocore.exceptions
 from fastapi import Depends
-from typing_extensions import Self
 
 from .config import Settings, get_settings
 
