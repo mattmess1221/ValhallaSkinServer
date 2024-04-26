@@ -1,6 +1,7 @@
 import os
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Awaitable, Callable
+from typing import Any
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request, Response, status

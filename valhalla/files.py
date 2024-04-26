@@ -1,4 +1,5 @@
-from typing import Annotated, Iterator
+from collections.abc import Iterator
+from typing import Annotated
 
 import fs
 from fastapi import Depends

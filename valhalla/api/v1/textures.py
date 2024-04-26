@@ -1,4 +1,5 @@
-from typing import Annotated, Any, AsyncGenerator, AsyncIterable
+from collections.abc import AsyncGenerator, AsyncIterable
+from typing import Annotated, Any
 
 import anyio
 import httpx

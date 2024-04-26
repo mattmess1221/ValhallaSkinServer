@@ -2,9 +2,9 @@
 # mypy has it disabled in pyproject.toml
 # pyright: reportGeneralTypeIssues=false
 from collections import defaultdict
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 from datetime import datetime, timezone
-from typing import Annotated, Iterator, cast
+from typing import Annotated, cast
 from uuid import UUID
 
 from fastapi import Depends

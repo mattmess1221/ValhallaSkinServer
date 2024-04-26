@@ -1,6 +1,7 @@
 import datetime
 import enum
-from typing import Any, Awaitable, Callable, TypeVar, overload
+from collections.abc import Awaitable, Callable
+from typing import Any, TypeVar, overload
 from uuid import UUID
 
 import httpx

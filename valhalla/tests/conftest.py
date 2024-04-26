@@ -1,7 +1,8 @@
+from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Annotated, Any, AsyncGenerator, Generator, Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
 
 import pytest
