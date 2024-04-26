@@ -2,7 +2,6 @@
 name = "valhalla"
 version = "1.1.0"
 description = "An alternative skin server for Minecraft supporting metadata and hd textures"
-readme = { file = "README.md", content-type = "text/markdown" }
 authors = [
     { name = "Matthew Messinger", email = "mattmess1221@gmail.com" },
 ]
@@ -28,14 +27,13 @@ dependencies = [
     "gunicorn>=22.0.0",
 ]
 requires-python = ">=3.10,<4.0"
-license = { text = "MIT" }
 
 [project.urls]
 repository = "https://github.com/killjoy1221/ValhallaSkinServer"
 
 [build-system]
-requires = ["pdm-pep517>=1.0.0"]
-build-backend = "pdm.pep517.api"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
 
 [tool.pdm]
 
@@ -92,10 +90,6 @@ plugins = [
     "pydantic.mypy",
 ]
 ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "valhalla.crud"
-ignore_errors = true
 
 [tool.ruff]
 target-version = 'py310'
