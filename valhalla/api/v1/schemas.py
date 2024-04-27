@@ -89,12 +89,14 @@ class TextureHistoryEntry(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "url": "https://textures.minelittlepony-mod.com/textures/4bbd43fd83ee1053c42994c4bf1db9496ede6b73",
-                "metadata": {
-                    "model": "default",
-                },
-                "startTime": 1667697567511,
-                "endTime": "null",
+                "skin": {
+                    "url": "https://textures.minelittlepony-mod.com/textures/4bbd43fd83ee1053c42994c4bf1db9496ede6b73",
+                    "metadata": {
+                        "model": "default",
+                    },
+                    "startTime": 1667697567511,
+                    "endTime": None,
+                }
             }
         }
     )

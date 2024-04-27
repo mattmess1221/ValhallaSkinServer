@@ -13,14 +13,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from ..app import app
 from ..auth import current_user
-from ..config import Env, settings
+from ..config import settings
 from ..crud import CRUD
 from ..db import get_db
 from ..models import User, reg
-
-assets = Path(__file__).parent / "assets"
-
-settings.env = Env.TESTING
 
 SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 

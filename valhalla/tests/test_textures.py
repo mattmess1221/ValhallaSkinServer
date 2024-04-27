@@ -5,7 +5,7 @@ from fastapi import HTTPException
 
 from valhalla import image
 
-from .conftest import assets
+from .assets import assets
 
 bad = assets / "bad"
 good = assets / "good"

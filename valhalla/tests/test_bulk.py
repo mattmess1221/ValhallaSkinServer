@@ -1,11 +1,21 @@
-from .conftest import TestClient, TestUser, assets
+import pytest
 
-test_skin = assets / "good" / "64x64.png"
+from .assets import steve_file as test_skin
+from .conftest import TestClient, TestUser
 
 
-def test_unknown_bulk_user(client: TestClient, user: TestUser) -> None:
+@pytest.mark.parametrize(
+    ("api_version", "path"),
+    [
+        ("v1", "bulk_textures"),
+        ("v2", "users"),
+    ],
+)
+def test_unknown_bulk_user(
+    api_version: str, path: str, client: TestClient, user: TestUser
+) -> None:
     resp = client.post(
-        "/api/v1/bulk_textures",
+        f"/api/{api_version}/{path}",
         json={
             "uuids": [
                 str(user.uuid),
@@ -17,21 +27,30 @@ def test_unknown_bulk_user(client: TestClient, user: TestUser) -> None:
     assert len(data["users"]) == 0
 
 
-def test_bulk_users(client: TestClient, users: list[TestUser]) -> None:
+@pytest.mark.parametrize(
+    ("api_version", "path"),
+    [
+        ("v1", "bulk_textures"),
+        ("v2", "users"),
+    ],
+)
+def test_bulk_users(
+    api_version: str, path: str, client: TestClient, users: list[TestUser]
+) -> None:
     # setup
     for u in users:
         resp = client.put(
-            "/api/v1/textures",
+            f"/api/{api_version}/textures",
             headers=u.auth_header,
             files={
-                "file": (test_skin.name, test_skin.open("rb"), "image/png"),
+                "file": (test_skin.name, test_skin.read_bytes(), "image/png"),
             },
         )
         assert resp.status_code == 200
 
     uuids = [str(u.uuid) for u in users]
 
-    resp = client.post("/api/v1/bulk_textures", json={"uuids": uuids})
+    resp = client.post(f"/api/{api_version}/{path}", json={"uuids": uuids})
     assert resp.status_code == 200
 
     data = resp.json()

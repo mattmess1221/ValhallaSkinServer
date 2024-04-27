@@ -1,100 +1,100 @@
 from io import BytesIO
-from pathlib import Path
 
 import pytest
 
-from valhalla.config import settings
-
-from .conftest import TestClient, TestUser, assets
-
-textures_url = "http://testserver/textures/"
-steve_file = assets / "good/64x64.png"
-steve_url = "http://assets.mojang.com/SkinTemplates/steve.png"
-steve_hash = textures_url + steve_file.with_suffix(".txt").read_text().strip()
-
-
-def build_request_kwargs(file: str | Path) -> tuple[str, dict]:
-    if isinstance(file, Path):
-        return "PUT", {
-            "data": {"type": "skin"},
-            "files": {"file": (file.name, file.read_bytes(), "image/png")},
-        }
-    return "POST", {
-        "json": {"file": file, "type": "skin"},
-    }
+from .assets import steve_file_data, steve_hash, steve_url
+from .conftest import TestClient, TestUser
 
 
 @pytest.mark.parametrize(
-    "file_or_url, hash_url",
+    ("api_version", "self_path", "skin_key"),
     [
-        [steve_file, steve_hash],
-        [steve_url, steve_hash],
+        ("v1", "textures", "skin"),
+        ("v2", "user", "minecraft:skin"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("method", "client_args"),
+    [
+        ("PUT", {"data": {"type": "skin"}, "files": {"file": steve_file_data}}),
+        ("POST", {"json": {"type": "skin", "file": steve_url}}),
     ],
 )
 def test_texture_upload_post(
-    file_or_url: Path | str, hash_url: str, client: TestClient, user: TestUser
+    api_version: str,
+    self_path: str,
+    skin_key: str,
+    method: str,
+    client_args: dict,
+    client: TestClient,
+    user: TestUser,
 ) -> None:
-    method, kwargs = build_request_kwargs(file_or_url)
-    upload_resp = client.request(
-        method, "/api/v1/textures", headers=user.auth_header, **kwargs
-    )
+    headers = client_args.setdefault("headers", {})
+    headers |= user.auth_header
+    upload_resp = client.request(method, f"/api/{api_version}/textures", **client_args)
     assert upload_resp.status_code == 200, upload_resp.json()
 
-    user_resp = client.get("/api/v1/textures", headers=user.auth_header)
+    user_resp = client.get(f"/api/{api_version}/{self_path}", headers=user.auth_header)
     assert user_resp.status_code == 200, user_resp.json()
     textures = user_resp.json()
-    skin = textures["skin"]
+    skin = textures[skin_key]
 
-    assert skin["url"] == hash_url
+    assert skin["url"] == steve_hash
     assert not skin["metadata"]
 
-    anon_resp = client.get(f"/api/v1/user/{user.uuid}")
+    anon_resp = client.get(f"/api/{api_version}/user/{user.uuid}")
     assert anon_resp.status_code == 200, anon_resp.json()
     assert anon_resp.json()["textures"] == textures
 
 
-def test_unknown_user_textures(client: TestClient, user: TestUser) -> None:
-    resp = client.get(f"/api/v1/user/{user.uuid}")
-    assert resp.status_code == 404
-
-
+@pytest.mark.parametrize("api_version", ["v1", "v2"])
 @pytest.mark.parametrize(
-    "file_or_url",
-    [steve_file, steve_url],
+    ("method", "client_args"),
+    [
+        ("PUT", {"data": {"type": "skin"}, "files": {"file": steve_file_data}}),
+        ("POST", {"json": {"type": "skin", "url": steve_url}}),
+    ],
 )
 def test_unauthenticated_user_texture_upload(
-    file_or_url: str, client: TestClient
+    api_version: str,
+    method: str,
+    client_args: dict,
+    client: TestClient,
 ) -> None:
-    method, kwargs = build_request_kwargs(file_or_url)
-    upload_resp = client.request(method, "/api/v1/textures", **kwargs)
+    upload_resp = client.request(method, f"/api/{api_version}/textures", **client_args)
     assert upload_resp.status_code == 401, upload_resp.json()
 
 
-def test_non_image_upload(client: TestClient, user: TestUser) -> None:
+@pytest.mark.parametrize("api_version", ["v1", "v2"])
+def test_non_image_upload(client: TestClient, user: TestUser, api_version: str) -> None:
     resp = client.put(
-        "/api/v1/textures",
+        f"/api/{api_version}/textures",
         headers=user.auth_header,
-        data={"type": "skin"},
+        data={"type": "minecraft:skin"},
         files={"file": ("file.txt", BytesIO(b"bad file"))},
     )
     assert resp.status_code == 400, resp.json()
     assert "cannot identify image file" in resp.json()["detail"]
 
 
-def test_very_large_upload(client: TestClient, user: TestUser) -> None:
+@pytest.mark.parametrize("api_version", ["v1", "v2"])
+def test_very_large_upload(
+    client: TestClient, user: TestUser, api_version: str
+) -> None:
     ten_megabytes_of_zeros = b"\0" * 10_000_000
     resp = client.put(
-        "/api/v1/textures",
+        f"/api/{api_version}/textures",
         headers={
             **user.auth_header,
             # lie about the content-length
             "content-length": "1000",
         },
-        data={"type": "skin"},
+        data={"type": "minecraft:skin"},
         files={"file": ("file.txt", BytesIO(ten_megabytes_of_zeros))},
     )
-    assert resp.status_code == 413, resp.json()  # Request entity too large
+    assert resp.status_code == 413, resp.text  # Request entity too large
 
 
-def test_env() -> None:
-    assert not settings.env.isprod
+def test_unknown_user_textures(client: TestClient, user: TestUser) -> None:
+    resp = client.get(f"/api/v1/user/{user.uuid}")
+    assert resp.status_code == 404

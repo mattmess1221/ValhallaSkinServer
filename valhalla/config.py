@@ -38,7 +38,6 @@ def generate_server_id() -> str:
 
 
 class Settings(BaseSettings):
-    env: Env = Env.PRODUCTION
     debug: bool = False
 
     texture_type_denylist: frozenset[str] = frozenset({"cape"})
