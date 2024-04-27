@@ -16,7 +16,7 @@ Minecraft client. The other can be done using a browser through Xbox Live.
 
 Logging in via Xbox Live uses OAuth2. If the server is configured with an Azure
 client id and secret, and CORS is configured for your app, logging in can be as
-simple as browsing to `/api/v1/auth/xbox`.
+simple as browsing to [`/auth/xbox`](/auth/xbox).
 
 ### Minecraft
 

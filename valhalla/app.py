@@ -1,14 +1,13 @@
 import os
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from importlib import metadata, resources
 from typing import Any
 
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
-
-import valhalla
 
 from . import api, models
 from .config import settings
@@ -25,8 +24,8 @@ async def app_lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
 
 app = FastAPI(
     title="Valhalla Skin Server",
-    version=valhalla.__version__,
-    description=valhalla.__usage__,
+    version=metadata.version("valhalla"),
+    description=resources.read_text("valhalla", "USAGE.md"),
     license_info={
         "name": "MIT License",
         "url": "https://github.com/killjoy1221/ValhallaSkinServer/blob/main/LICENSE",
