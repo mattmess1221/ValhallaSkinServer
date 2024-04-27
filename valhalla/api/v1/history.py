@@ -5,11 +5,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from valhalla.api.utils import get_textures_url
-
 from ... import models
 from ...auth import require_user
 from ...crud import CRUD
+from ..utils import get_textures_url
 from . import schemas
 
 router = APIRouter(tags=["User History"])
