@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Callable, Generator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -7,17 +7,16 @@ from uuid import UUID, uuid4
 
 import pytest
 from fastapi import Depends, FastAPI, Header
+from fastapi.routing import Mount
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-from valhalla.models import User
 
 from ..app import app
 from ..auth import current_user
 from ..config import Env, settings
 from ..crud import CRUD
 from ..db import get_db
-from ..models import reg
+from ..models import User, reg
 
 assets = Path(__file__).parent / "assets"
 
@@ -41,14 +40,28 @@ async def app_lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
 app.router.lifespan_context = app_lifespan
 
 
+def app_override[T: Callable](func: Callable) -> Callable[[T], T]:
+    def decorator(override: T) -> T:
+        def set_override(app: FastAPI = app) -> None:
+            app.dependency_overrides[func] = override
+            for r in app.routes:
+                match r:
+                    case Mount(app=FastAPI() as app):
+                        set_override(app)
+
+        set_override()
+        return override
+
+    return decorator
+
+
+@app_override(get_db)
 async def override_get_db() -> AsyncGenerator[AsyncSession, Any]:
     async with TestingSessionLocal() as session:
         yield session
 
 
-app.dependency_overrides[get_db] = override_get_db
-
-
+@app_override(current_user)
 async def override_current_user(
     crud: Annotated[CRUD, Depends()],
     authorization: Annotated[str | None, Header()] = None,
@@ -61,9 +74,6 @@ async def override_current_user(
         await crud.db.refresh(user)
         return user
     return None
-
-
-app.dependency_overrides[current_user] = override_current_user
 
 
 @pytest.fixture

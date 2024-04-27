@@ -1,6 +1,10 @@
 Valhalla is an alternative Minecraft skin and metadata server. It supports high
 definition textures (up to 1024x1024).
 
+## API Versions
+
+- [/api/v1](/api/v1)
+
 ## Authentication
 
 Any operation that modifies a user's texture requires an authentication token.

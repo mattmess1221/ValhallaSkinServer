@@ -2,8 +2,7 @@ from uuid import UUID
 
 import httpx
 from fastapi import HTTPException
-
-from .schemas import BaseModel
+from pydantic import BaseModel
 
 # ?username=username&serverId=hash&ip=ip"
 _VALIDATE = "https://sessionserver.mojang.com/session/minecraft/hasJoined"

@@ -3,7 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from ..config import settings
+from valhalla.config import settings
+
 from .conftest import TestClient, TestUser, assets
 
 textures_url = "http://testserver/textures/"

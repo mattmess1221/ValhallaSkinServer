@@ -1,4 +1,4 @@
-from ..schemas import Texture
+from valhalla.api.v1.schemas import Texture
 
 
 def test_texture_validation() -> None:

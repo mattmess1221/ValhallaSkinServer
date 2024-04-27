@@ -59,7 +59,7 @@ async def echo(request: Request) -> dict[str, Any]:
 
 app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
 
-app.include_router(api.router, prefix="/api")
+api.setup(app)
 
 if settings.textures_bucket is None:
     os.makedirs(settings.textures_path, exist_ok=True)

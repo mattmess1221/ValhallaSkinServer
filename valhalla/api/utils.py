@@ -2,7 +2,7 @@ from urllib.parse import urljoin
 
 from fastapi import Request
 
-from ...config import settings
+from ..config import settings
 
 
 def get_textures_url(request: Request) -> str:

@@ -1,11 +1,15 @@
-from fastapi import APIRouter
+from fastapi import FastAPI
 
-from . import auth, bulk, history, legacy, textures, user
+from . import auth, bulk, history, textures, user
 
-router = APIRouter()
-router.include_router(auth.router)
-router.include_router(bulk.router)
-router.include_router(history.router)
-router.include_router(legacy.router)
-router.include_router(textures.router)
-router.include_router(user.router)
+app = FastAPI(
+    title="Valhalla",
+    version="v1.0",
+    docs_url="/",
+)
+
+app.include_router(auth.router)
+app.include_router(bulk.router)
+app.include_router(history.router)
+app.include_router(textures.router)
+app.include_router(user.router)

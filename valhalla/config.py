@@ -56,11 +56,6 @@ class Settings(BaseSettings):
     xbox_live_client_id: str | None = None
     xbox_live_client_secret: str | None = None
 
-    xbox_live_server_metadata_url: str = (
-        "https://login.live.com/.well-known/openid-configuration"
-    )
-    xbox_live_client_kwargs: dict = {"scope": "XboxLive.signin offline_access"}
-
     def get_database_url(self) -> str:
         return resolve_db(self.database_url)
 

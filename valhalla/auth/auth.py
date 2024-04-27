@@ -6,9 +6,9 @@ from fastapi.security import OAuth2
 from jose import JWTError, jwt
 from starlette import status
 
-from . import models
-from .config import settings
-from .crud import CRUD
+from .. import models
+from ..config import settings
+from ..crud import CRUD
 
 auth_scheme = OAuth2(auto_error=False)
 

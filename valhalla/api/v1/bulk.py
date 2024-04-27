@@ -2,11 +2,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from valhalla.api.v1.utils import get_textures_url
-
 from ...crud import CRUD
-from ...schemas import BulkRequest, BulkResponse
-from .user import get_user_textures
+from ..utils import get_textures_url
+from .schemas import BulkRequest, BulkResponse
+from .textures import get_user_textures
 
 router = APIRouter(tags=["User information"])
 

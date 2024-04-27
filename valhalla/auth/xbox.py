@@ -5,7 +5,8 @@ from typing import Any, TypeVar, overload
 from uuid import UUID
 
 import httpx
-from pydantic import AnyHttpUrl, BaseModel
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 
 XBOX_AUTH_BASE = "https://{0}.auth.xboxlive.com/{0}/{1}"
 XBOX_USER_AUTH = XBOX_AUTH_BASE.format("user", "authenticate")
@@ -85,6 +86,8 @@ class MinecraftAuth(BaseModel):
     token_type: str
     expires_in: int
 
+    model_config = ConfigDict(alias_generator=to_camel)
+
 
 class XboxAuth(BaseModel):
     IssueInstant: datetime.datetime
@@ -132,11 +135,16 @@ async def login_with_xbox(xbl_access_token: str) -> MinecraftProfile:
         async def auth_minecraft_from_xbox(xbox_auth: XboxAuth) -> MinecraftAuth:
             userhash = xbox_auth.DisplayClaims["xui"][0]["uhs"]
             xsts_token = xbox_auth.Token
+            print(xbox_auth)
             response = await client.post(
                 MC_AUTH_XBOX,
                 json={"identityToken": f"XBL3.0 x={userhash};{xsts_token}"},
             )
-            return MinecraftAuth.model_validate(response.json())
+            data = response.json()
+            from pprint import pprint
+
+            pprint(data)
+            return MinecraftAuth.model_validate(data)
 
         async def get_minecraft_profile(mc_auth: MinecraftAuth) -> MinecraftProfile:
             response = await client.get(

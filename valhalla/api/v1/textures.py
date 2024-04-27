@@ -1,5 +1,7 @@
 from collections.abc import AsyncGenerator, AsyncIterable
+from datetime import datetime
 from typing import Annotated, Any
+from urllib.parse import urljoin
 
 import anyio.to_thread
 import httpx
@@ -10,17 +12,37 @@ from starlette import status
 
 from valhalla.config import settings
 
-from ... import image, models, schemas
+from ... import image, models
 from ...auth import require_user
 from ...byteconv import mb
 from ...crud import CRUD
 from ...files import Files
-from .user import get_user_textures
-from .utils import get_textures_url
+from ..utils import get_textures_url
+from . import schemas
 
 router = APIRouter(tags=["Texture Uploads"])
 
 max_upload_size = 5 * mb
+
+
+async def get_user_textures(
+    user: models.User,
+    at: datetime | None,
+    crud: CRUD,
+    textures_url: str,
+) -> schemas.UserTextures:
+    textures = await crud.get_user_textures(user, at=at)
+    return schemas.UserTextures(
+        profile_id=user.uuid,
+        profile_name=user.name,
+        textures={
+            k: schemas.Texture(
+                url=urljoin(textures_url, v.upload.hash),
+                metadata=v.meta,
+            )
+            for k, v in textures.items()
+        },
+    )
 
 
 @router.get("/textures")

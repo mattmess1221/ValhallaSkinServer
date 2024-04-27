@@ -2,28 +2,18 @@ import secrets
 from datetime import timedelta
 from typing import Annotated
 
-from authlib.integrations.starlette_client import OAuth, OAuthError, StarletteOAuth2App
 from expiringdict import ExpiringDict
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
-from fastapi.responses import RedirectResponse
 
-from ... import auth, mojang, xbox
+from ...auth import mojang, token_from_user
 from ...config import settings
 from ...crud import CRUD
-from ...schemas import LoginMinecraftHandshakeResponse, LoginResponse
+from .schemas import LoginMinecraftHandshakeResponse, LoginResponse
 
 router = APIRouter(tags=["Authentication"])
 
-
 # Validate tokens are kept 100 at a time for 30 seconds each
 validate_tokens: dict[int, tuple[str, str]] = ExpiringDict(100, 30)
-
-
-@router.get("/auth/logout", status_code=302)
-async def logout() -> RedirectResponse:
-    response = RedirectResponse("/", status_code=302)
-    response.delete_cookie("token")
-    return response
 
 
 def get_client_ip(request: Request) -> str:
@@ -73,7 +63,7 @@ async def minecraft_login_callback(
     )
 
     user = await crud.get_or_create_user(joined.id, joined.name)
-    token = auth.token_from_user(user, expire_in=timedelta(hours=1))
+    token = token_from_user(user, expire_in=timedelta(hours=1))
     auth_header = f"Bearer {token}"
 
     response.headers["Authorization"] = token
@@ -87,47 +77,17 @@ async def minecraft_login_callback(
         await crud.db.commit()
 
 
-xboxlive: StarletteOAuth2App = OAuth().register(
-    "xboxlive",
-    client_id=settings.xbox_live_client_id,
-    client_secret=settings.xbox_live_client_secret,
-    server_metadata_url=settings.xbox_live_server_metadata_url,
-    client_kwargs=settings.xbox_live_client_kwargs,
-)  # type: ignore
+# legacy endpoints
 
-
-@router.api_route("/auth/xbox")
-async def xbox_login(request: Request) -> RedirectResponse:
-    callback = str(request.url_for("xbox_login_callback"))
-    callback = callback.replace("http://127.0.0.1", "http://localhost")
-    return await xboxlive.authorize_redirect(request, callback)
-
-
-@router.api_route("/auth/xbox/callback")
-async def xbox_login_callback(
-    request: Request, crud: Annotated[CRUD, Depends()]
-) -> RedirectResponse:
-    if not request.client:
-        raise HTTPException(400)
-    try:
-        token = await xboxlive.authorize_access_token(request)
-        profile = await xbox.login_with_xbox(token["access_token"])
-    except (OAuthError, xbox.XboxLoginError) as e:
-        raise HTTPException(403, str(e)) from None
-    else:
-        user = await crud.get_or_create_user(profile.id, profile.name)
-        expires = timedelta(days=365)
-        token = auth.token_from_user(user, expire_in=expires)
-
-        response = RedirectResponse("/")
-        response.headers["Authorization"] = f"Bearer {token}"
-        response.set_cookie(
-            "token",
-            token,
-            secure=True,
-            httponly=True,
-            expires=int(expires.total_seconds()),
-        )
-
-        await crud.db.commit()
-        return response
+router.add_api_route(
+    "/auth/handshake",
+    minecraft_login,
+    methods=["POST"],
+    include_in_schema=False,
+)
+router.add_api_route(
+    "/auth/response",
+    minecraft_login_callback,
+    methods=["POST"],
+    include_in_schema=False,
+)
