@@ -21,7 +21,7 @@ def test_namespace_texture(skin_type: str, client: TestClient, user: TestUser) -
     [
         "minecraft:custom",  # minecraft is reserved
         "MYMOD:ALLCAPS",  # lowercase only
-        "foo.bar:baa",  # no special characters in namespace
+        "foo+bar:baa",  # no special characters in namespace
         "hat",  # default namespace is minecraft, which is reserved
     ],
 )
