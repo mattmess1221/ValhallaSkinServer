@@ -70,7 +70,7 @@ async def post_skin_old(
     user: Annotated[models.User, Depends(check_user)],
     crud: Annotated[CRUD, Depends()],
     files: Annotated[Files, Depends()],
-    skin_type: str,
+    skin_type: schemas.SkinType,
 ) -> None:
     """Upload a skin texture from a url
 
@@ -91,7 +91,7 @@ async def put_skin_old(
     user: Annotated[models.User, Depends(check_user)],
     file: Annotated[UploadFile, File()],
     file_size: Annotated[int, Depends(textures.valid_content_length)],
-    skin_type: str,
+    skin_type: schemas.SkinType,
 ) -> None:
     """Upload a skin texture from a file
 
@@ -115,7 +115,7 @@ async def put_skin_old(
 async def delete_skin_old(
     user: Annotated[models.User, Depends(check_user)],
     crud: Annotated[CRUD, Depends()],
-    skin_type: str,
+    skin_type: schemas.SkinType,
 ) -> None:
     texture = textures.DeleteTexture(type=skin_type)
     await textures.delete_texture(texture, user, crud)

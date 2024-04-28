@@ -1,3 +1,4 @@
+import re
 from datetime import UTC, datetime
 from functools import partial
 from typing import Annotated
@@ -8,6 +9,34 @@ from pydantic import AnyHttpUrl, ConfigDict, Field
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic.alias_generators import to_camel
 from pydantic.functional_serializers import PlainSerializer
+from pydantic.functional_validators import AfterValidator
+
+
+def convert_skin_type_from_legacy(s: str) -> str:
+    s = s.lower().replace("_", ":", 1)
+    if ":" not in s:
+        ns = "minecraft"
+        val = s
+    else:
+        ns, val = s.split(":", 1)
+        ns = re.sub(r"[^a-z0-9._-]", "", ns)
+        val = re.sub(r"[^a-z0-9./_-]", "", val)
+    return f"{ns}:{val}"
+
+
+def convert_skin_type_to_legacy(s: str) -> str:
+    print(s)
+    ns, val = s.split(":", 1)
+    if ns == "minecraft":
+        return val
+    return f"{ns}_{val}"
+
+
+SkinType = Annotated[
+    str,
+    AfterValidator(convert_skin_type_from_legacy),
+    PlainSerializer(convert_skin_type_to_legacy, when_used="json"),
+]
 
 
 def serialize_datetime(dt: datetime) -> int:
@@ -61,7 +90,7 @@ class UserTextures(BaseModel):
     timestamp: Timestamp = Field(default_factory=partial(datetime.now, UTC))
     profile_id: UUID
     profile_name: str
-    textures: dict[str, Texture]
+    textures: dict[SkinType, Texture]
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -105,7 +134,7 @@ class TextureHistoryEntry(BaseModel):
 class UserTextureHistory(BaseModel):
     profile_id: UUID
     profile_name: str
-    textures: dict[str, list[TextureHistoryEntry]]
+    textures: dict[SkinType, list[TextureHistoryEntry]]
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -128,13 +157,13 @@ class UserTextureHistory(BaseModel):
 
 
 class TextureUpload(BaseModel):
-    type: str = Form()
+    type: SkinType = Form()
     file: UploadFile = File(media_type="image/png")
     metadata: dict[str, str] | None = Form(None)
 
 
 class TexturePost(BaseModel):
-    type: str
+    type: SkinType
     file: AnyHttpUrl
     metadata: dict[str, str] | None = None
 

@@ -44,7 +44,7 @@ async def get_texture(
     user: Annotated[models.User, Depends(require_user)],
     crud: Annotated[CRUD, Depends()],
     textures_url: Annotated[str, Depends(get_textures_url)],
-) -> dict[str, schemas.Texture]:
+) -> dict[schemas.SkinType, schemas.Texture]:
     user_texts = await get_user_textures(user, None, crud, textures_url)
     return user_texts.textures
 
@@ -68,7 +68,7 @@ async def put_texture(
     user: Annotated[models.User, Depends(require_user)],
     file: Annotated[UploadFile, File()],
     file_size: Annotated[int, Depends(valid_content_length)],
-    type: Annotated[str, Form()] = "skin",
+    type: Annotated[schemas.SkinType, Form()] = "skin",
     meta: Annotated[dict[str, str] | None, Form()] = None,
 ) -> None:
     body = await read_upload(file, file_size)
@@ -96,7 +96,7 @@ async def upload_file(
 
 
 class DeleteTexture(BaseModel):
-    type: str
+    type: schemas.SkinType
 
 
 @router.delete("/texture")

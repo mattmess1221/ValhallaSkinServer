@@ -7,10 +7,10 @@ from .conftest import TestClient, TestUser
 
 
 @pytest.mark.parametrize(
-    ("api_version", "self_path", "skin_key"),
+    ("api_version", "self_path", "skin_keys"),
     [
-        ("v1", "textures", "skin"),
-        ("v2", "user", "minecraft:skin"),
+        ("v1", "textures", ("skin",)),
+        ("v2", "user", ("textures", "minecraft:skin")),
     ],
 )
 @pytest.mark.parametrize(
@@ -23,7 +23,7 @@ from .conftest import TestClient, TestUser
 def test_texture_upload_post(
     api_version: str,
     self_path: str,
-    skin_key: str,
+    skin_keys: tuple[str, ...],
     method: str,
     client_args: dict,
     client: TestClient,
@@ -37,6 +37,9 @@ def test_texture_upload_post(
     user_resp = client.get(f"/api/{api_version}/{self_path}", headers=user.auth_header)
     assert user_resp.status_code == 200, user_resp.json()
     textures = user_resp.json()
+    *path, skin_key = skin_keys
+    for key in path:
+        textures = textures[key]
     skin = textures[skin_key]
 
     assert skin["url"] == steve_hash
