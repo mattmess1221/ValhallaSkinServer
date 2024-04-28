@@ -2,18 +2,17 @@
 # mypy has it disabled in pyproject.toml
 # pyright: reportGeneralTypeIssues=false
 from collections import defaultdict
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Annotated, cast
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends
-from sqlalchemy.engine import ScalarResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy.sql import Select, update
+from sqlalchemy.sql import update
 from sqlalchemy.sql.expression import func
 
 from . import models
@@ -25,16 +24,16 @@ class CRUD:
     db: Annotated[AsyncSession, Depends(get_db)]
 
     async def get_user(self, user_id: int) -> models.User | None:
-        result: ScalarResult = await self.db.scalars(
-            cast(Select, select(models.User)).where(models.User.id == user_id).limit(1)
+        result = await self.db.execute(
+            select(models.User).where(models.User.id == user_id).limit(1)
         )
-        return result.one_or_none()
+        return result.scalar()
 
     async def get_user_by_uuid(self, uuid: UUID) -> models.User | None:
-        result: ScalarResult = await self.db.scalars(
-            cast(Select, select(models.User)).where(models.User.uuid == uuid).limit(1)
+        result = await self.db.execute(
+            select(models.User).where(models.User.uuid == uuid).limit(1)
         )
-        return result.one_or_none()
+        return result.scalar()
 
     async def resolve_uuids(self, uuids: list[UUID]) -> AsyncIterator[models.User]:
         for uid in uuids:
@@ -48,7 +47,7 @@ class CRUD:
         *,
         at: datetime | None = None,
     ) -> dict[str, models.Texture]:
-        result: Iterator[models.Texture] = await self.db.scalars(
+        result = await self.db.execute(
             select(models.Texture)
             .options(selectinload(models.Texture.upload))
             .where(
@@ -65,7 +64,7 @@ class CRUD:
                 )
             )
         )
-        return {item.tex_type: item for item in result}
+        return {item.tex_type: item for item in result.scalars()}
 
     async def get_user_textures_history(
         self,
@@ -74,7 +73,7 @@ class CRUD:
         limit: int | None = None,
         at: datetime | None = None,
     ) -> dict[str, list[models.Texture]]:
-        result: AsyncIterator[models.Texture] = await self.db.stream_scalars(
+        result = await self.db.stream_scalars(
             select(models.Texture)
             .options(selectinload(models.Texture.upload))
             .where(
@@ -104,12 +103,10 @@ class CRUD:
         return user
 
     async def get_upload(self, texture_hash: str) -> models.Upload | None:
-        results: ScalarResult = await self.db.scalars(
-            cast(Select, select(models.Upload))
-            .where(models.Upload.hash == texture_hash)
-            .limit(1)
+        results = await self.db.execute(
+            select(models.Upload).where(models.Upload.hash == texture_hash).limit(1)
         )
-        return results.one_or_none()
+        return results.scalar()
 
     async def put_upload(self, user: models.User, texture_hash: str) -> models.Upload:
         upload = models.Upload(
