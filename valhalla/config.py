@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     )
     xbox_live_client_kwargs: dict = {"scope": "XboxLive.signin offline_access"}
 
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
+
     def get_database_url(self) -> str:
         return resolve_db(self.database_url)
 

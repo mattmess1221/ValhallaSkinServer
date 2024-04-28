@@ -68,3 +68,8 @@ class Files:
 
         if not file.exists():
             file.write_bytes(data)
+
+
+def verify_aws_credentials() -> None:
+    sts_client = boto3.client("sts")
+    sts_client.get_caller_identity()
