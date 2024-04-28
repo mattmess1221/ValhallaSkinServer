@@ -145,4 +145,3 @@ class CRUD:
                     meta=meta or {},
                 )
             )
-        await self.db.commit()

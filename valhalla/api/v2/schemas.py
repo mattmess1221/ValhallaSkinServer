@@ -30,7 +30,7 @@ def validate_skin_type(data: str) -> str:
         ns = "minecraft"
         val = data
 
-    if not re.match(r"[a-z_-]", ns) or not re.match(r"[a-z./_-]", val):
+    if not re.fullmatch(r"[a-z_-]+", ns) or not re.fullmatch(r"[a-z./_-]+", val):
         msg = f"invalid characters in identifier: {data}"
         raise ValueError(msg)
 

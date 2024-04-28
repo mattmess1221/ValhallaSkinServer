@@ -30,7 +30,7 @@ async def app_lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
 app = FastAPI(
     title="Valhalla Skin Server",
     version=metadata.version("valhalla"),
-    description=resources.read_text("valhalla", "USAGE.md"),
+    description=(resources.files("valhalla") / "USAGE.md").read_text(),
     license_info={
         "name": "MIT License",
         "url": "https://github.com/killjoy1221/ValhallaSkinServer/blob/main/LICENSE",

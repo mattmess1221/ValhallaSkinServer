@@ -1,8 +1,8 @@
+from collections.abc import Sequence
 from typing import Annotated
 
 import anyio.to_thread
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from starlette import status
 
 from valhalla.config import settings
@@ -40,7 +40,7 @@ async def put_texture(
     user: Annotated[models.User, Depends(require_user)],
     file: Annotated[UploadFile, File()],
     file_size: Annotated[int, Depends(valid_content_length)],
-    type: Annotated[str, Form()] = "minecraft:skin",
+    type: Annotated[schemas.SkinType, Form()] = "minecraft:skin",
     meta: Annotated[dict[str, str] | None, Form()] = None,
 ) -> None:
     body = await read_upload(file, file_size)
@@ -67,15 +67,17 @@ async def upload_file(
     await crud.put_texture(user, texture_type, upload, meta or {})
 
 
-class DeleteTexture(BaseModel):
-    type: str
-
-
-@router.delete("/texture")
+@router.delete("/textures")
 async def delete_texture(
-    texture: DeleteTexture,
     user: Annotated[models.User, Depends(require_user)],
     crud: Annotated[CRUD, Depends()],
+    type: Annotated[Sequence[schemas.SkinType], Query()] = ("minecraft:skin",),
 ) -> None:
-    await crud.put_texture(user, texture.type, None)
+    """Delete textures.
+
+    By default, deletes 'minecraft:skin', but can delete
+    multiple textures by providing multiple `?type=` query parameters.
+    """
+    for skin_type in type:
+        await crud.put_texture(user, skin_type, None)
     await crud.db.commit()
