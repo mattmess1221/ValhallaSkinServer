@@ -3,11 +3,14 @@ import traceback
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
+from .. import limit
+
 
 class SubApp(FastAPI):
     def setup(self) -> None:
         super().setup()
 
+        limit.setup(self)
         self.add_exception_handler(Exception, self.exception_handler)
 
     def exception_handler(self, request: Request, exc: Exception) -> JSONResponse:

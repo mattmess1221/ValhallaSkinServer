@@ -3,12 +3,13 @@ from typing import Annotated
 from urllib.parse import urljoin
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path, status
+from fastapi import APIRouter, Depends, Path, Request, status
 from fastapi.exceptions import HTTPException
 
 from ... import models
 from ...auth import require_user
 from ...crud import CRUD
+from ...limit import limiter
 from ..utils import get_textures_url
 from . import schemas
 
@@ -65,7 +66,17 @@ async def get_texture(
 
 
 @router.get("/user/{user_id}")
+@limiter.shared_limit(
+    "60/minute",
+    scope="user",
+    error_message=(
+        "You have surpassed the request limit for this endpoint of 60 requests per"
+        " minute. Use '/api/v2/users' if you have multiple users to request."
+        " For more details, see https://skins.minelittlepony-mod.com/api/v2"
+    ),
+)
 async def get_user_textures_by_uuid(
+    request: Request,
     textures_url: Annotated[str, Depends(get_textures_url)],
     crud: Annotated[CRUD, Depends()],
     user_id: Annotated[UUID, Path()],
