@@ -97,8 +97,13 @@ class CRUD:
         if user is None:
             user = models.User(uuid=uuid, name=name)
             self.db.add(user)
+
+            await self.db.commit()
+            await self.db.refresh(user)
         elif user.name != name:
             user.name = name
+
+            await self.db.commit()
 
         return user
 
