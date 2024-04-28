@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import AnyHttpUrl, ConfigDict, Field
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic.alias_generators import to_camel
+from pydantic.functional_serializers import PlainSerializer
 from pydantic.functional_validators import AfterValidator
 
 ProfileID = Annotated[UUID, Field(examples=["51aa42eb7-aef4-b6ab-758a-b0fadac5ab5"])]
@@ -41,6 +42,17 @@ def validate_skin_type(data: str) -> str:
     return f"{ns}:{val}"
 
 
+def serialize_skin_type(data: str) -> str:
+    if ":" in data:
+        return data
+
+    if "_" in data:
+        ns, vl = data.split("_", 1)
+        return f"{ns}:{vl}"
+
+    return f"minecraft:{data}"
+
+
 SkinType = Annotated[
     str,
     AfterValidator(validate_skin_type),
@@ -67,8 +79,9 @@ class Texture(BaseModel):
     metadata: MetadataDict | None = None
 
 
+OutSkinType = Annotated[str, PlainSerializer(serialize_skin_type)]
 TexturesDict = Annotated[
-    dict[SkinType, Texture],
+    dict[OutSkinType, Texture],
     Field(
         examples=[
             {

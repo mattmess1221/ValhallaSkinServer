@@ -25,7 +25,6 @@ def convert_skin_type_from_legacy(s: str) -> str:
 
 
 def convert_skin_type_to_legacy(s: str) -> str:
-    print(s)
     ns, val = s.split(":", 1)
     if ns == "minecraft":
         return val
