@@ -22,8 +22,9 @@ async def resolve_user(
 
 
 @router.get("/user/{user_id}")
-@limiter.limit(
+@limiter.shared_limit(
     "60/minute",
+    scope="user",
     error_message=(
         "You have surpassed the request limit for this endpoint of 60 requests per"
         " minute. Use '/api/v1/bulk_textures' if you have multiple users to request."
