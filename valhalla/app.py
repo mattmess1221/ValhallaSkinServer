@@ -9,7 +9,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import api, models
+from . import api, limit, models
 from .config import settings
 from .database import engine
 
@@ -18,6 +18,11 @@ from .database import engine
 async def app_lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
     async with engine.begin() as session:
         await session.run_sync(models.reg.metadata.create_all)
+
+    if settings.textures_bucket:
+        from .files import verify_aws_credentials
+
+        verify_aws_credentials()
 
     yield
 
@@ -32,6 +37,8 @@ app = FastAPI(
     },
     lifespan=app_lifespan,
 )
+
+limit.setup(app)
 
 
 @app.middleware("http")
