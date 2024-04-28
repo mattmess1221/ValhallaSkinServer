@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     server_id: str = Field(default_factory=generate_server_id)
 
     textures_bucket: str | None = None
-    textures_path: str = "./textures"
+    textures_path: str = "textures"
     textures_url: AnyHttpUrl | None = None
 
     xbox_live_client_id: str | None = None
