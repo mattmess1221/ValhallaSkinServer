@@ -1,6 +1,7 @@
 import secrets
 from datetime import timedelta
 from typing import Annotated
+from uuid import UUID
 
 from expiringdict import ExpiringDict
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
@@ -62,7 +63,7 @@ async def minecraft_login_callback(
         server_id=settings.server_id,
     )
 
-    user = await crud.get_or_create_user(joined.id, joined.name)
+    user = await crud.get_or_create_user(UUID(joined["id"]), joined["name"])
     token = token_from_user(user, expire_in=timedelta(hours=1))
     auth_header = f"Bearer {token}"
 

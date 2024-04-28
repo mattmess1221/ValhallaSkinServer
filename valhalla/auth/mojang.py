@@ -1,15 +1,14 @@
-from uuid import UUID
+from typing import TypedDict
 
 import httpx
 from fastapi import HTTPException
-from pydantic import BaseModel
 
 # ?username=username&serverId=hash&ip=ip"
 _VALIDATE = "https://sessionserver.mojang.com/session/minecraft/hasJoined"
 
 
-class HasJoinedResponse(BaseModel):
-    id: UUID
+class HasJoinedResponse(TypedDict):
+    id: str
     name: str
 
 
@@ -30,5 +29,5 @@ async def has_joined(*, username: str, server_id: str) -> HasJoinedResponse:
             except ValueError:
                 pass
             else:
-                return HasJoinedResponse.model_validate(data)
+                return HasJoinedResponse(data)
         raise HTTPException(401)

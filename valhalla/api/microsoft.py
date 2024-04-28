@@ -1,5 +1,6 @@
 from datetime import timedelta
 from typing import Annotated
+from uuid import UUID
 
 from authlib.integrations.starlette_client import OAuth, OAuthError, StarletteOAuth2App
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -45,7 +46,7 @@ async def xbox_login_callback(
     except (OAuthError, xbox.XboxLoginError) as e:
         raise HTTPException(403, str(e)) from None
     else:
-        user = await crud.get_or_create_user(profile.id, profile.name)
+        user = await crud.get_or_create_user(UUID(profile["id"]), profile["name"])
         expires = timedelta(days=365)
         token = token_from_user(user, expire_in=expires)
 

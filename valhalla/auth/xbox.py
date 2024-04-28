@@ -1,12 +1,9 @@
 import datetime
 import enum
 from collections.abc import Awaitable, Callable
-from typing import Any, TypeVar, overload
-from uuid import UUID
+from typing import Any, TypedDict, TypeVar, overload
 
 import httpx
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict
-from pydantic.alias_generators import to_camel
 
 XBOX_AUTH_BASE = "https://{0}.auth.xboxlive.com/{0}/{1}"
 XBOX_USER_AUTH = XBOX_AUTH_BASE.format("user", "authenticate")
@@ -31,7 +28,7 @@ x_error_messages = {
 }
 
 
-class XSTSError(BaseModel):
+class XSTSError(TypedDict):
     Identity: str
     XErr: XError
     Message: str
@@ -39,7 +36,7 @@ class XSTSError(BaseModel):
 
 
 def get_x_error_message(err: XSTSError) -> str:
-    return x_error_messages.get(err.XErr, x_default_error_message)
+    return x_error_messages.get(err["XErr"], x_default_error_message)
 
 
 class XboxLoginError(Exception):
@@ -48,20 +45,20 @@ class XboxLoginError(Exception):
         self.err = err
 
 
-class TextureState(enum.Enum):
+class TextureState(enum.StrEnum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
 
 
-class SkinVariant(enum.Enum):
+class SkinVariant(enum.StrEnum):
     CLASSIC = "CLASSIC"
     SLIM = "SLIM"
 
 
-class Texture(BaseModel):
-    id: UUID
+class Texture(TypedDict):
+    id: str
     state: TextureState
-    url: AnyHttpUrl
+    url: str
 
 
 class Skin(Texture):
@@ -72,24 +69,22 @@ class Cape(Texture):
     alias: str
 
 
-class MinecraftProfile(BaseModel):
-    id: UUID
+class MinecraftProfile(TypedDict):
+    id: str
     name: str
     skins: list[Skin]
     capes: list[Cape]
 
 
-class MinecraftAuth(BaseModel):
+class MinecraftAuth(TypedDict):
     username: str
     roles: list
-    access_token: str
-    token_type: str
-    expires_in: int
-
-    model_config = ConfigDict(alias_generator=to_camel)
+    accessToken: str
+    tokenType: str
+    expiresIn: int
 
 
-class XboxAuth(BaseModel):
+class XboxAuth(TypedDict):
     IssueInstant: datetime.datetime
     NotAfter: datetime.datetime
     Token: str
@@ -113,7 +108,7 @@ async def login_with_xbox(xbl_access_token: str) -> MinecraftProfile:
                 },
             )
 
-            return XboxAuth.model_validate(response.json())
+            return XboxAuth(response.json())
 
         async def auth_xsts(xbox_auth: XboxAuth) -> XboxAuth:
             response = await client.post(
@@ -121,37 +116,34 @@ async def login_with_xbox(xbl_access_token: str) -> MinecraftProfile:
                 json={
                     "Properties": {
                         "SandboxId": "RETAIL",
-                        "UserTokens": [xbox_auth.Token],
+                        "UserTokens": [xbox_auth["Token"]],
                     },
                     "RelyingParty": "rp://api.minecraftservices.com/",
                     "TokenType": "JWT",
                 },
             )
             if response.is_client_error:
-                raise XboxLoginError(XSTSError.model_validate(response.json()))
+                raise XboxLoginError(XSTSError(response.json()))
 
-            return XboxAuth.model_validate(response.json())
+            return XboxAuth(response.json())
 
         async def auth_minecraft_from_xbox(xbox_auth: XboxAuth) -> MinecraftAuth:
-            userhash = xbox_auth.DisplayClaims["xui"][0]["uhs"]
-            xsts_token = xbox_auth.Token
-            print(xbox_auth)
+            userhash = xbox_auth["DisplayClaims"]["xui"][0]["uhs"]
+            xsts_token = xbox_auth["Token"]
             response = await client.post(
                 MC_AUTH_XBOX,
                 json={"identityToken": f"XBL3.0 x={userhash};{xsts_token}"},
             )
             data = response.json()
-            from pprint import pprint
 
-            pprint(data)
-            return MinecraftAuth.model_validate(data)
+            return MinecraftAuth(data)
 
         async def get_minecraft_profile(mc_auth: MinecraftAuth) -> MinecraftProfile:
             response = await client.get(
                 MC_PROFILE,
-                headers={"Authorization": f"Bearer {mc_auth.access_token}"},
+                headers={"Authorization": f"Bearer {mc_auth['accessToken']}"},
             )
-            return MinecraftProfile.model_validate(response.json())
+            return MinecraftProfile(response.json())
 
         async def login(xbl_access_token: str) -> MinecraftProfile:
             """Start the lengthy authorization process."""
