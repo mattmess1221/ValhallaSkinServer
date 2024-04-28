@@ -10,7 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 import valhalla
 
-from . import api, models
+from . import api, limit, models
 from .config import settings
 from .database import engine
 
@@ -38,6 +38,8 @@ app = FastAPI(
     },
     lifespan=app_lifespan,
 )
+
+limit.setup(app)
 
 
 @app.middleware("http")
