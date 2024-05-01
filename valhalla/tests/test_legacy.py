@@ -18,11 +18,14 @@ def build_request_kwargs(file: str | Path) -> tuple[str, dict]:
 
 
 @pytest.mark.parametrize(
-    "file",
-    [steve_file, steve_url],
+    "steve_uri",
+    [(steve_url, steve_file), steve_file],
+    indirect=True,
 )
-def test_legacy_upload(file: str | Path, client: TestClient, user: TestUser) -> None:
-    method, kwargs = build_request_kwargs(file)
+def test_legacy_upload(
+    steve_uri: str | Path, client: TestClient, user: TestUser
+) -> None:
+    method, kwargs = build_request_kwargs(steve_uri)
     resp = client.request(
         method, f"/api/v1/user/{user.uuid}/skin", headers=user.auth_header, **kwargs
     )
@@ -30,13 +33,13 @@ def test_legacy_upload(file: str | Path, client: TestClient, user: TestUser) -> 
 
 
 @pytest.mark.parametrize(
-    "file",
-    [steve_file, steve_url],
+    "steve_uri",
+    [steve_url, steve_file],
 )
 def test_legacy_upload_wrong_user(
-    file: str | Path, client: TestClient, user: TestUser
+    steve_uri: str | Path, client: TestClient, user: TestUser
 ) -> None:
-    method, kwargs = build_request_kwargs(file)
+    method, kwargs = build_request_kwargs(steve_uri)
     resp = client.request(
         method, f"/api/v1/user/{uuid4()}/skin", headers=user.auth_header, **kwargs
     )
@@ -44,13 +47,12 @@ def test_legacy_upload_wrong_user(
 
 
 @pytest.mark.parametrize(
-    "file, hash_url",
-    [(steve_file, steve_hash), (steve_url, steve_hash)],
+    "steve_uri",
+    [(steve_url, steve_file), steve_file],
+    indirect=True,
 )
-def test_legacy_v0(
-    file: str | Path, hash_url: str, client: TestClient, user: TestUser
-) -> None:
-    method, kwargs = build_request_kwargs(file)
+def test_legacy_v0(steve_uri: str | Path, client: TestClient, user: TestUser) -> None:
+    method, kwargs = build_request_kwargs(steve_uri)
     resp = client.request(
         method, f"/api/user/{user.uuid}/skin", headers=user.auth_header, **kwargs
     )
@@ -62,7 +64,7 @@ def test_legacy_v0(
 
     data = resp.json()
     skin = data["textures"]["skin"]["url"]
-    assert skin == hash_url
+    assert skin == steve_hash
 
     resp = client.delete(f"/api/user/{user.uuid}/skin", headers=user.auth_header)
     assert resp.status_code == 200

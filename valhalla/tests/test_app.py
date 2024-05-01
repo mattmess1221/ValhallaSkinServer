@@ -24,16 +24,14 @@ def build_request_kwargs(file: str | Path) -> tuple[str, dict]:
 
 
 @pytest.mark.parametrize(
-    "file_or_url, hash_url",
-    [
-        [steve_file, steve_hash],
-        [steve_url, steve_hash],
-    ],
+    "steve_uri",
+    [(steve_url, steve_file), steve_file],
+    indirect=True,
 )
 def test_texture_upload_post(
-    file_or_url: Path | str, hash_url: str, client: TestClient, user: TestUser
+    steve_uri: Path | str, client: TestClient, user: TestUser
 ) -> None:
-    method, kwargs = build_request_kwargs(file_or_url)
+    method, kwargs = build_request_kwargs(steve_uri)
     upload_resp = client.request(
         method, "/api/v1/textures", headers=user.auth_header, **kwargs
     )
@@ -44,7 +42,7 @@ def test_texture_upload_post(
     textures = user_resp.json()
     skin = textures["skin"]
 
-    assert skin["url"] == hash_url
+    assert skin["url"] == steve_hash
     assert not skin["metadata"]
 
     anon_resp = client.get(f"/api/v1/user/{user.uuid}")
@@ -58,13 +56,13 @@ def test_unknown_user_textures(client: TestClient, user: TestUser) -> None:
 
 
 @pytest.mark.parametrize(
-    "file_or_url",
-    [steve_file, steve_url],
+    "steve_uri",
+    [steve_url, steve_file],
 )
 def test_unauthenticated_user_texture_upload(
-    file_or_url: str, client: TestClient
+    steve_uri: str, client: TestClient
 ) -> None:
-    method, kwargs = build_request_kwargs(file_or_url)
+    method, kwargs = build_request_kwargs(steve_uri)
     upload_resp = client.request(method, "/api/v1/textures", **kwargs)
     assert upload_resp.status_code == 401, upload_resp.json()
 
