@@ -3,11 +3,12 @@ from functools import partial
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import File, Form, UploadFile
+from fastapi import File, Form, HTTPException, UploadFile, status
 from pydantic import AnyHttpUrl, ConfigDict, Field
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic.alias_generators import to_camel
 from pydantic.functional_serializers import PlainSerializer
+from pydantic.functional_validators import AfterValidator
 
 
 def serialize_datetime(dt: datetime) -> int:
@@ -131,8 +132,20 @@ class TextureUpload(BaseModel):
     metadata: dict[str, str] | None = Form(None)
 
 
+def validate_texture_type(s: str) -> str:
+    if ":" in s:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="API v1 does not support namespaced texture types.",
+        )
+    return s
+
+
+TextureType = Annotated[str, AfterValidator(validate_texture_type)]
+
+
 class TexturePost(BaseModel):
-    type: str
+    type: TextureType
     file: AnyHttpUrl
     metadata: dict[str, str] | None = None
 

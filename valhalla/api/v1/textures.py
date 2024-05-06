@@ -103,14 +103,9 @@ async def put_texture(
     user: Annotated[models.User, Depends(require_user)],
     file: Annotated[UploadFile, File()],
     file_size: Annotated[int, Depends(valid_content_length)],
-    type: Annotated[str, Form()] = "skin",
+    type: Annotated[schemas.TextureType, Form()] = "skin",
     meta: Annotated[dict[str, str] | None, Form()] = None,
 ) -> None:
-    if ":" in type:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="API v1 does not support namespaced texture types.",
-        )
     body = await read_upload(iter_upload_file(file), file_size)
     await upload_file(user, type, body, meta, crud, files)
     await crud.db.commit()
@@ -136,7 +131,7 @@ async def upload_file(
 
 
 class DeleteTexture(BaseModel):
-    type: str
+    type: schemas.TextureType
 
 
 @router.delete("/texture")
