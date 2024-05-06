@@ -95,3 +95,13 @@ def test_very_large_upload(client: TestClient, user: TestUser) -> None:
 
 def test_env() -> None:
     assert not settings.env.isprod
+
+
+def test_bad_namespaced_tex_type(client: TestClient, user: TestUser) -> None:
+    resp = client.put(
+        "/api/v1/textures",
+        headers=user.auth_header,
+        files={"file": (steve_file.name, steve_file.read_bytes(), "image/png")},
+        data={"type": "minecraft:skin"},
+    )
+    assert resp.status_code == 400
