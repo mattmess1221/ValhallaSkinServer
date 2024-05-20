@@ -57,7 +57,7 @@ async def redirect_http_to_https(
 @app.api_route("/echo", include_in_schema=False)
 async def echo(request: Request) -> dict[str, Any]:
     return {
-        "headers": request.headers,
+        "headers": dict(request.headers),
         "url": str(request.url),
         "method": request.method,
     }
