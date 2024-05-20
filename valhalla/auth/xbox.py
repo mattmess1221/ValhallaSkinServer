@@ -1,7 +1,6 @@
 import datetime
 import enum
-from collections.abc import Awaitable, Callable
-from typing import Any, TypedDict, TypeVar, overload
+from typing import Any, TypedDict
 
 import httpx
 
@@ -78,10 +77,11 @@ class MinecraftProfile(TypedDict):
 
 class MinecraftAuth(TypedDict):
     username: str
-    roles: list
-    accessToken: str
-    tokenType: str
-    expiresIn: int
+    roles: list[Any]
+    metadata: dict[str, Any]
+    access_token: str
+    expires_in: int
+    token_type: str
 
 
 class XboxAuth(TypedDict):
@@ -94,14 +94,14 @@ class XboxAuth(TypedDict):
 async def login_with_xbox(xbl_access_token: str) -> MinecraftProfile:
     async with httpx.AsyncClient() as client:
 
-        async def auth_xbl(access_token: str) -> XboxAuth:
+        async def auth_xboxlive(oauth_token: str) -> XboxAuth:
             response = await client.post(
                 XBOX_USER_AUTH,
                 json={
                     "Properties": {
                         "AuthMethod": "RPS",
                         "SiteName": "user.auth.xboxlive.com",
-                        "RpsTicket": f"d={access_token}",
+                        "RpsTicket": f"d={oauth_token}",
                     },
                     "RelyingParty": "http://auth.xboxlive.com",
                     "TokenType": "JWT",
@@ -110,7 +110,7 @@ async def login_with_xbox(xbl_access_token: str) -> MinecraftProfile:
 
             return XboxAuth(response.json())
 
-        async def auth_xsts(xbox_auth: XboxAuth) -> XboxAuth:
+        async def auth_mojang(xbox_auth: XboxAuth) -> XboxAuth:
             response = await client.post(
                 XBOX_XSTS_AUTH,
                 json={
@@ -127,9 +127,9 @@ async def login_with_xbox(xbl_access_token: str) -> MinecraftProfile:
 
             return XboxAuth(response.json())
 
-        async def auth_minecraft_from_xbox(xbox_auth: XboxAuth) -> MinecraftAuth:
-            userhash = xbox_auth["DisplayClaims"]["xui"][0]["uhs"]
-            xsts_token = xbox_auth["Token"]
+        async def auth_minecraft_from_xbox(mojang_auth: XboxAuth) -> MinecraftAuth:
+            userhash = mojang_auth["DisplayClaims"]["xui"][0]["uhs"]
+            xsts_token = mojang_auth["Token"]
             response = await client.post(
                 MC_AUTH_XBOX,
                 json={"identityToken": f"XBL3.0 x={userhash};{xsts_token}"},
@@ -139,71 +139,19 @@ async def login_with_xbox(xbl_access_token: str) -> MinecraftProfile:
             return MinecraftAuth(data)
 
         async def get_minecraft_profile(mc_auth: MinecraftAuth) -> MinecraftProfile:
+            token_type = mc_auth["token_type"]
+            access_token = mc_auth["access_token"]
             response = await client.get(
                 MC_PROFILE,
-                headers={"Authorization": f"Bearer {mc_auth['accessToken']}"},
+                headers={"Authorization": f"{token_type} {access_token}"},
             )
             return MinecraftProfile(response.json())
 
         async def login(xbl_access_token: str) -> MinecraftProfile:
             """Start the lengthy authorization process."""
-            return await compose(
-                xbl_access_token,
-                auth_xbl,
-                auth_xsts,
-                auth_minecraft_from_xbox,
-                get_minecraft_profile,
-            )
+            xauth = await auth_xboxlive(xbl_access_token)
+            xsxt = await auth_mojang(xauth)
+            mcauth = await auth_minecraft_from_xbox(xsxt)
+            return await get_minecraft_profile(mcauth)
 
         return await login(xbl_access_token)
-
-
-T1 = TypeVar("T1")
-T2 = TypeVar("T2")
-T3 = TypeVar("T3")
-T4 = TypeVar("T4")
-T5 = TypeVar("T5")
-
-
-@overload
-async def compose(
-    payload: T1,
-    func1: Callable[[T1], Awaitable[T2]],
-    /,
-) -> T2: ...
-
-
-@overload
-async def compose(
-    payload: T1,
-    func1: Callable[[T1], Awaitable[T2]],
-    func2: Callable[[T2], Awaitable[T3]],
-    /,
-) -> T3: ...
-
-
-@overload
-async def compose(
-    payload: T1,
-    func1: Callable[[T1], Awaitable[T2]],
-    func2: Callable[[T2], Awaitable[T3]],
-    func3: Callable[[T3], Awaitable[T4]],
-    /,
-) -> T4: ...
-
-
-@overload
-async def compose(
-    payload: T1,
-    func1: Callable[[T1], Awaitable[T2]],
-    func2: Callable[[T2], Awaitable[T3]],
-    func3: Callable[[T3], Awaitable[T4]],
-    func4: Callable[[T4], Awaitable[T5]],
-    /,
-) -> T5: ...
-
-
-async def compose(payload: Any, *funcs: Callable[[Any], Awaitable[Any]]) -> Any:
-    for func in funcs:
-        payload = await func(payload)
-    return payload
