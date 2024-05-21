@@ -1,4 +1,3 @@
-from datetime import timedelta
 from typing import Annotated
 from uuid import UUID
 
@@ -6,7 +5,7 @@ from authlib.integrations.starlette_client import OAuth, OAuthError, StarletteOA
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
-from ..auth import token_from_user, xbox
+from ..auth import auth, xbox
 from ..config import settings
 from ..crud import CRUD
 
@@ -22,10 +21,9 @@ xboxlive: StarletteOAuth2App = OAuth().register(
 
 
 @router.api_route("/logout")
-async def logout() -> RedirectResponse:
-    response = RedirectResponse("/", status_code=302)
-    response.delete_cookie("token")
-    return response
+async def logout(request: Request) -> RedirectResponse:
+    request.session.clear()
+    return RedirectResponse("/", status_code=302)
 
 
 @router.api_route("/auth/xbox")
@@ -47,18 +45,7 @@ async def xbox_login_callback(
         raise HTTPException(403, str(e)) from None
     else:
         user = await crud.get_or_create_user(UUID(profile["id"]), profile["name"])
-        expires = timedelta(days=365)
-        token = token_from_user(user, expire_in=expires)
-
-        response = RedirectResponse("/")
-        response.headers["Authorization"] = f"Bearer {token}"
-        response.set_cookie(
-            "token",
-            token,
-            secure=True,
-            httponly=True,
-            expires=int(expires.total_seconds()),
-        )
+        auth.save_user_to_session(request, user)
 
         await crud.db.commit()
-        return response
+        return RedirectResponse("/")

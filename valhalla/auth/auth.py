@@ -1,9 +1,9 @@
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
-from fastapi import Cookie, Depends, HTTPException
+import jwt
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2
-from jose import JWTError, jwt
 from starlette import status
 
 from .. import models
@@ -12,22 +12,18 @@ from ..crud import CRUD
 
 auth_scheme = OAuth2(auto_error=False)
 
+USER_SESSION_KEY = "user"
+
 
 async def current_user(
+    request: Request,
     crud: Annotated[CRUD, Depends()],
     header: Annotated[str | None, Depends(auth_scheme)],
-    cookie: Annotated[str | None, Cookie(alias="token")] = None,
 ) -> models.User | None:
-    if header and header.startswith("Bearer "):
-        header = header[7:]
-    token = header or cookie
-    if token is None:
-        return None
+    if header:
+        return await load_user_from_header(header, crud)
 
-    try:
-        return await user_from_token(token, crud)
-    except JWTError:
-        return None
+    return await load_user_from_session(request, crud)
 
 
 def require_user(
@@ -48,6 +44,31 @@ def token_from_user(user: models.User, *, expire_in: timedelta) -> str:
 
 
 async def user_from_token(token: str, crud: CRUD) -> models.User | None:
-    payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
-    sid = payload["sid"]
-    return await crud.get_user(sid)
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+    except jwt.InvalidTokenError:
+        return None
+
+    user_id = payload.get("sid")
+    if isinstance(user_id, int):
+        return await crud.get_user(user_id)
+    return None
+
+
+def save_user_to_session(request: Request, user: models.User) -> None:
+    request.session[USER_SESSION_KEY] = user.id
+
+
+async def load_user_from_session(request: Request, crud: CRUD) -> models.User | None:
+    user_id = request.session.get(USER_SESSION_KEY)
+    if isinstance(user_id, int):
+        return await crud.get_user(user_id)
+    return None
+
+
+async def load_user_from_header(header: str, crud: CRUD) -> models.User | None:
+    token_type, _, token = header.partition(" ")
+    if token_type.lower() != "bearer":
+        return None
+
+    return await user_from_token(token, crud)

@@ -6,7 +6,7 @@ from uuid import UUID
 from expiringdict import ExpiringDict
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
 
-from ...auth import mojang, token_from_user
+from ...auth import auth, mojang
 from ...config import settings
 from ...crud import CRUD
 from .schemas import LoginMinecraftHandshakeResponse, LoginResponse
@@ -64,7 +64,7 @@ async def minecraft_login_callback(
     )
 
     user = await crud.get_or_create_user(UUID(joined["id"]), joined["name"])
-    token = token_from_user(user, expire_in=timedelta(hours=1))
+    token = auth.token_from_user(user, expire_in=timedelta(hours=1))
     auth_header = f"Bearer {token}"
 
     response.headers["Authorization"] = token
