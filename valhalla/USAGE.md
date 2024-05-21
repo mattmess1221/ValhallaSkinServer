@@ -4,6 +4,7 @@ definition textures (up to 1024x1024).
 ## API Versions
 
 - [/api/v1](/api/v1)
+- [/api/v2](/api/v2)
 
 ## Authentication
 

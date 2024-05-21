@@ -41,6 +41,16 @@ app = FastAPI(
 limit.setup(app)
 
 
+@app.get("/")
+async def index(request: Request) -> Any:
+    return {
+        "docs": str(request.url_for("swagger_ui_html")),
+        "login": str(request.url_for("xbox_login")),
+        "api-v1": str(request.url_for("api-v1", path="/")),
+        "api-v2": str(request.url_for("api-v2", path="/")),
+    }
+
+
 @app.middleware("http")
 async def redirect_http_to_https(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
