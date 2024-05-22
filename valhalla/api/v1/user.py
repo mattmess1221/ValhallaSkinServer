@@ -11,7 +11,6 @@ from ...auth import require_user
 from ...crud import CRUD
 from ...files import Files
 from ...limit import limiter
-from ..utils import get_textures_url
 from . import schemas, textures
 
 router = APIRouter(tags=["User information"])
@@ -36,7 +35,7 @@ async def resolve_user(
 )
 async def get_user_textures_by_uuid(
     request: Request,
-    textures_url: Annotated[str, Depends(get_textures_url)],
+    files: Annotated[Files, Depends()],
     crud: Annotated[CRUD, Depends()],
     user: Annotated[models.User | None, Depends(resolve_user)],
     at: datetime | None = None,
@@ -50,7 +49,7 @@ async def get_user_textures_by_uuid(
     """
     if user is None:
         raise HTTPException(404)
-    return await textures.get_user_textures(user, at, crud, textures_url)
+    return await textures.get_user_textures(user, at, crud, files)
 
 
 def check_user(

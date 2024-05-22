@@ -1,7 +1,8 @@
 import secrets
+from typing import Annotated
 from urllib.parse import urlparse
 
-from pydantic import AnyHttpUrl, Field
+from pydantic import AfterValidator, AnyUrl, BeforeValidator, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 async_sql_drivers = {
@@ -26,35 +27,34 @@ def generate_server_id() -> str:
     return s.replace("-", "")
 
 
+def append_leading_slash(url: str | None) -> str | None:
+    if url and not url.endswith("/"):
+        url += "/"
+    return url
+
+
+DatabaseDSN = Annotated[str, AfterValidator(resolve_db)]
+LeadingSlashURL = Annotated[AnyUrl, BeforeValidator(append_leading_slash)]
+
+
 class Settings(BaseSettings):
     texture_type_denylist: frozenset[str] = frozenset({"cape"})
 
     secret_key: str = "dev"
-    database_url: str = "sqlite:///./valhalla.db"
+    database_url: DatabaseDSN = "sqlite:///./valhalla.db"
 
     # TODO this should be saved in the database
     server_id: str = Field(default_factory=generate_server_id)
 
     textures_bucket: str | None = None
     textures_path: str = "textures"
-    textures_url: AnyHttpUrl | None = None
+    textures_url: LeadingSlashURL | None = None
 
     xbox_live_client_id: str | None = None
     xbox_live_client_secret: str | None = None
 
     aws_access_key_id: str | None = None
     aws_secret_access_key: str | None = None
-
-    def get_database_url(self) -> str:
-        return resolve_db(self.database_url)
-
-    def get_textures_url(self) -> str | None:
-        url = self.textures_url
-        if url:
-            url = str(url)
-            if not url.endswith("/"):
-                url += "/"
-        return url
 
     model_config = SettingsConfigDict(
         env_file=".env",

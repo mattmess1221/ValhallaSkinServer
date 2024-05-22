@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Annotated
-from urllib.parse import urljoin
 
 import anyio.to_thread
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -13,7 +12,6 @@ from ...config import settings
 from ...crud import CRUD
 from ...files import Files
 from ...utils import download_file, read_upload, valid_content_length
-from ..utils import get_textures_url
 from . import schemas
 
 router = APIRouter(tags=["Texture Uploads"])
@@ -23,7 +21,7 @@ async def get_user_textures(
     user: models.User,
     at: datetime | None,
     crud: CRUD,
-    textures_url: str,
+    files: Files,
 ) -> schemas.UserTextures:
     textures = await crud.get_user_textures(user, at=at)
     return schemas.UserTextures(
@@ -31,7 +29,7 @@ async def get_user_textures(
         profile_name=user.name,
         textures={
             k: schemas.Texture(
-                url=urljoin(textures_url, v.upload.hash),
+                url=files.url_for(path=v.upload.hash),
                 metadata=v.meta,
             )
             for k, v in textures.items()
@@ -43,9 +41,9 @@ async def get_user_textures(
 async def get_texture(
     user: Annotated[models.User, Depends(require_user)],
     crud: Annotated[CRUD, Depends()],
-    textures_url: Annotated[str, Depends(get_textures_url)],
+    files: Annotated[Files, Depends()],
 ) -> dict[schemas.SkinType, schemas.Texture]:
-    user_texts = await get_user_textures(user, None, crud, textures_url)
+    user_texts = await get_user_textures(user, None, crud, files)
     return user_texts.textures
 
 

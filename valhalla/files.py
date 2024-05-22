@@ -2,10 +2,11 @@ import pathlib
 from dataclasses import dataclass
 from io import BytesIO
 from typing import TYPE_CHECKING, Annotated, Any, Protocol, Self
+from urllib.parse import urljoin
 
 import boto3
 import botocore.exceptions
-from fastapi import Depends
+from fastapi import Depends, Request
 
 from .config import Settings, get_settings
 
@@ -59,6 +60,8 @@ def get_filesystem(config: Annotated[Settings, Depends(get_settings)]) -> Filesy
 
 @dataclass
 class Files:
+    request: Request
+    settings: Annotated[Settings, Depends(get_settings)]
     fs: Annotated[Filesystem, Depends(get_filesystem)]
 
     def put_file(self, skin_hash: str, data: bytes) -> None:
@@ -68,6 +71,11 @@ class Files:
 
         if not file.exists():
             file.write_bytes(data)
+
+    def url_for(self, *, path: str) -> str:
+        if self.settings.textures_bucket is None:
+            return str(self.request.url_for("textures", path=path))
+        return urljoin(str(self.settings.textures_url), path)
 
 
 def verify_aws_credentials() -> None:

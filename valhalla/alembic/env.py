@@ -42,7 +42,7 @@ def run_migrations_offline() -> None:
     from valhalla.config import settings
 
     context.configure(
-        url=settings.get_database_url(),
+        url=settings.database_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},

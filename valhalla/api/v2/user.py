@@ -1,6 +1,5 @@
 from datetime import UTC, datetime
 from typing import Annotated
-from urllib.parse import urljoin
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path, Request, status
@@ -9,8 +8,8 @@ from fastapi.exceptions import HTTPException
 from ... import models
 from ...auth import require_user
 from ...crud import CRUD
+from ...files import Files
 from ...limit import limiter
-from ..utils import get_textures_url
 from . import schemas
 
 router = APIRouter(tags=["User information"])
@@ -20,7 +19,7 @@ async def get_user_textures(
     user: models.User,
     at: datetime | None,
     crud: CRUD,
-    textures_url: str,
+    files: Files,
 ) -> schemas.UserTextures:
     textures = await crud.get_user_textures(user, at=at)
     return schemas.UserTextures(
@@ -29,7 +28,7 @@ async def get_user_textures(
         profile_name=user.name,
         textures={
             k: schemas.Texture(
-                url=urljoin(textures_url, v.upload.hash),
+                url=files.url_for(path=v.upload.hash),
                 metadata=v.meta,
             )
             for k, v in textures.items()
@@ -41,7 +40,7 @@ async def get_user_textures(
 async def bulk_request_textures(
     body: schemas.BulkRequest,
     crud: Annotated[CRUD, Depends()],
-    textures_url: str = Depends(get_textures_url),
+    files: Annotated[Files, Depends()],
 ) -> schemas.BulkResponse:
     """Bulk request several user textures.
 
@@ -49,7 +48,7 @@ async def bulk_request_textures(
     """
     return schemas.BulkResponse(
         users=[
-            await get_user_textures(user, None, crud, textures_url)
+            await get_user_textures(user, None, crud, files)
             async for user in crud.resolve_uuids(body.uuids)
         ]
     )
@@ -59,9 +58,9 @@ async def bulk_request_textures(
 async def get_texture(
     user: Annotated[models.User, Depends(require_user)],
     crud: Annotated[CRUD, Depends()],
-    textures_url: Annotated[str, Depends(get_textures_url)],
+    files: Annotated[Files, Depends()],
 ) -> schemas.UserTextures:
-    return await get_user_textures(user, None, crud, textures_url)
+    return await get_user_textures(user, None, crud, files)
 
 
 @router.get("/user/{user_id}")
@@ -76,7 +75,7 @@ async def get_texture(
 )
 async def get_user_textures_by_uuid(
     request: Request,
-    textures_url: Annotated[str, Depends(get_textures_url)],
+    files: Annotated[Files, Depends()],
     crud: Annotated[CRUD, Depends()],
     user_id: Annotated[UUID, Path()],
     at: datetime | None = None,
@@ -85,4 +84,4 @@ async def get_user_textures_by_uuid(
     user = await crud.get_user_by_uuid(user_id)
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
-    return await get_user_textures(user, at, crud, textures_url)
+    return await get_user_textures(user, at, crud, files)
