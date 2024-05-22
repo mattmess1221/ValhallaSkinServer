@@ -28,4 +28,4 @@ def gen_skin_hash(image_data: bytes) -> str:
         raise HTTPException(400, "Unsupported image size")
 
     # Create a hash of the image and use it as the filename.
-    return hashlib.sha1(image.tobytes()).hexdigest()
+    return hashlib.sha256(image.tobytes()).hexdigest()
