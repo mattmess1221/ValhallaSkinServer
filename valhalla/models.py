@@ -15,51 +15,44 @@ class Base(DeclarativeBase):
 
 class User(Base):
     __tablename__ = "users"
-    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     uuid: Mapped[UUID] = mapped_column(unique=True)
     name: Mapped[str] = mapped_column()
 
     textures: Mapped[list["Texture"]] = relationship(
-        back_populates="user", init=False, lazy="selectin", repr=False
+        back_populates="user", lazy="selectin"
     )
     uploads: Mapped[list["Upload"]] = relationship(
-        back_populates="user", init=False, lazy="selectin", repr=False
+        back_populates="user", lazy="selectin"
     )
 
 
 class Upload(Base):
     __tablename__ = "uploads"
-    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     hash: Mapped[str] = mapped_column(unique=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     upload_time: Mapped[datetime] = mapped_column(
         insert_default=func.current_timestamp(), default=None
     )
 
-    user: Mapped[User] = relationship(back_populates="uploads", init=False, repr=False)
-    textures: Mapped[list["Texture"]] = relationship(
-        back_populates="upload", init=False, repr=False
-    )
+    user: Mapped[User] = relationship(back_populates="uploads")
+    textures: Mapped[list["Texture"]] = relationship(back_populates="upload")
 
 
 class Texture(Base):
     __tablename__ = "textures"
 
-    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     upload_id: Mapped[int] = mapped_column(ForeignKey("uploads.id"))
     tex_type: Mapped[str] = mapped_column()
-    meta: Mapped[Any] = mapped_column(JSON, default_factory=dict)
+    meta: Mapped[Any] = mapped_column(JSON, insert_default=dict)
 
     start_time: Mapped[datetime] = mapped_column(
-        insert_default=func.current_timestamp(),
-        default=None,
+        insert_default=func.current_timestamp()
     )
     end_time: Mapped[datetime | None] = mapped_column(default=None)
 
-    user: Mapped["User"] = relationship(
-        back_populates="textures", init=False, lazy="selectin", repr=False
-    )
-    upload: Mapped["Upload"] = relationship(
-        back_populates="textures", init=False, lazy="selectin", repr=False
-    )
+    user: Mapped["User"] = relationship(back_populates="textures", lazy="selectin")
+    upload: Mapped["Upload"] = relationship(back_populates="textures", lazy="selectin")
