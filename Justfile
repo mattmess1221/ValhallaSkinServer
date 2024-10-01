@@ -1,6 +1,9 @@
 dev:
     uv run fastapi dev valhalla/app.py
 
+test:
+    uv run pytest
+
 cov:
     just _cov erase
     just _cov run -m pytest
