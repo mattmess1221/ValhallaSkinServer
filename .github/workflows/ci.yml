@@ -19,7 +19,7 @@ jobs:
       run: uv sync --dev
 
     - name: Run tests
-      run: uv run pytest --cov tests
+      run: uv run pytest tests
 
     - name: Check Types
       run: uv run mypy .
