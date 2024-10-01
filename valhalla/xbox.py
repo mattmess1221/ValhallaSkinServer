@@ -80,7 +80,7 @@ class MinecraftProfile(BaseModel):
 
 class MinecraftAuth(BaseModel):
     username: str
-    roles: list
+    # roles: list
     access_token: str
     token_type: str
     expires_in: int

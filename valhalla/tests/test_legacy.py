@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -7,7 +8,7 @@ from .conftest import TestClient, TestUser
 from .test_app import steve_file, steve_hash, steve_url
 
 
-def build_request_kwargs(file: str | Path) -> tuple[str, dict]:
+def build_request_kwargs(file: str | Path) -> tuple[str, dict[str, Any]]:
     if isinstance(file, Path):
         return "PUT", {
             "files": {"file": (file.name, file.open("rb"), "image/png")},

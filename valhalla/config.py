@@ -59,7 +59,9 @@ class Settings(BaseSettings):
     xbox_live_server_metadata_url: str = (
         "https://login.live.com/.well-known/openid-configuration"
     )
-    xbox_live_client_kwargs: dict = {"scope": "XboxLive.signin offline_access"}
+    xbox_live_client_kwargs: dict[str, str] = {
+        "scope": "XboxLive.signin offline_access"
+    }
 
     aws_access_key_id: str | None = None
     aws_secret_access_key: str | None = None
@@ -68,12 +70,12 @@ class Settings(BaseSettings):
         return resolve_db(self.database_url)
 
     def get_textures_url(self) -> str | None:
-        url = self.textures_url
-        if url:
-            url = str(url)
+        if self.textures_url:
+            url = str(self.textures_url)
             if not url.endswith("/"):
                 url += "/"
-        return url
+            return url
+        return None
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -4,7 +4,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy.engine import Connection
 
-from valhalla.models import reg
+from valhalla.models import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -19,7 +19,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = reg.metadata
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -69,7 +69,7 @@ async def run_migrations_online() -> None:
     from valhalla.database import engine as connectable
 
     async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)  # type: ignore
+        await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
 

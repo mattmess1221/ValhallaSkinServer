@@ -44,7 +44,6 @@ class S3Path:
 
 def get_filesystem(config: Annotated[Settings, Depends(get_settings)]) -> Filesystem:
     bucket = config.textures_bucket
-    path = config.textures_path
     if bucket is None:
         # bucket not set, use local files for storage
         path = pathlib.Path(config.textures_path)
@@ -54,7 +53,7 @@ def get_filesystem(config: Annotated[Settings, Depends(get_settings)]) -> Filesy
 
     # use s3 for storage
     s3_client = boto3.client("s3")
-    return S3Path(s3_client, bucket, path)
+    return S3Path(s3_client, bucket, config.textures_path)
 
 
 @dataclass

@@ -1,5 +1,6 @@
 from io import BytesIO
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -12,7 +13,7 @@ steve_url = "http://assets.mojang.com/SkinTemplates/steve.png"
 steve_hash = textures_url + steve_file.with_suffix(".txt").read_text().strip()
 
 
-def build_request_kwargs(file: str | Path) -> tuple[str, dict]:
+def build_request_kwargs(file: str | Path) -> tuple[str, dict[str, Any]]:
     if isinstance(file, Path):
         return "PUT", {
             "data": {"type": "skin"},

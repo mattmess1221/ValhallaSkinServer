@@ -81,7 +81,7 @@ async def minecraft_login_callback(
     try:
         return LoginResponse(
             access_token=auth_header,
-            user_id=user.uuid,  # type: ignore
+            user_id=user.uuid,
         )
     finally:
         await crud.db.commit()
@@ -93,7 +93,7 @@ xboxlive: StarletteOAuth2App = OAuth().register(
     client_secret=settings.xbox_live_client_secret,
     server_metadata_url=settings.xbox_live_server_metadata_url,
     client_kwargs=settings.xbox_live_client_kwargs,
-)  # type: ignore
+)  # pyright: ignore
 
 
 @router.api_route("/auth/xbox")

@@ -38,16 +38,12 @@ build-backend = "hatchling.build"
 [tool.uv]
 dev-dependencies = [
     "aiosqlite>=0.20.0",
-
     "coverage>=7.6.1",
     "pytest>=8.1.2",
     "pytest-httpx>=0.30.0,<0.32.0",
     "moto[s3,sts]>=5.0.5",
-
     "aiosqlite>=0.20.0",
-
     "ruff>=0.4.2",
-
     "mypy>=1.10.0",
     "types-aiofiles>=23.2.0.20240403",
     "types-pillow>=10.2.0.20240423",
@@ -81,7 +77,23 @@ omit = [
 plugins = [
     "pydantic.mypy",
 ]
+
+follow_imports = "silent"
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_any_generics = true
+check_untyped_defs = true
+
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["authlib.*", "expiringdict"]
 ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
 
 [tool.ruff]
 target-version = 'py312'

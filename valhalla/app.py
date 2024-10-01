@@ -18,7 +18,7 @@ from .database import engine
 @asynccontextmanager
 async def app_lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
     async with engine.begin() as session:
-        await session.run_sync(models.reg.metadata.create_all)
+        await session.run_sync(models.Base.metadata.create_all)
 
     if settings.textures_bucket:
         from .files import verify_aws_credentials
