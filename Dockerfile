@@ -1,4 +1,4 @@
-FROM python:3.12 AS python-base
+FROM python:3.13 AS python-base
 ENV PIP_NO_CACHE_DIR=no \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_ROOT_USER_ACTION=ignore \
