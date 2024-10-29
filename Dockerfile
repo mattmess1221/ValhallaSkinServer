@@ -11,19 +11,19 @@ ENV PDM_CHECK_UPDATE=False \
     PDM_PEP517_SCM_VERSION=$SOURCE_VERSION \
     PDM_USE_VENV=False
 
-RUN pip install -q pdm==2.15.1
+RUN pip install -q pdm==2.19.3
 
 COPY pyproject.toml pdm.lock README.md /project/
 COPY valhalla USAGE.md /project/valhalla/
 
 WORKDIR /project
-RUN pdm install --prod --no-lock --no-editable
+RUN pdm install --prod --frozen-lockfile --no-editable
 
 FROM python-base
 
 WORKDIR /project
 
-COPY --from=builder /project/__pypackages__/3.12 /project
+COPY --from=builder /project/__pypackages__/3.13 /project
 COPY alembic.ini /project/etc/valhalla/alembic.ini
 
 ENV PATH=$PATH:/project/bin \
