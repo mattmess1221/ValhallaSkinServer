@@ -1,7 +1,6 @@
 import os
 from collections.abc import Generator
 from pathlib import Path
-from typing import Any
 
 import boto3
 import pytest
@@ -21,7 +20,7 @@ def aws_credentials() -> None:
 
 
 @pytest.fixture(scope="function")
-def aws(aws_credentials: None) -> Generator[None, Any, None]:
+def aws(aws_credentials: None) -> Generator[None]:
     with mock_aws():
         yield
 

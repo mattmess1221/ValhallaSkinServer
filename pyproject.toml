@@ -33,7 +33,7 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.29",
     "uvicorn>=0.29.0",
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 
 [project.urls]
 repository = "https://github.com/killjoy1221/ValhallaSkinServer"
@@ -92,6 +92,9 @@ omit = [
 plugins = [
     "pydantic.mypy",
 ]
+
+[[tool.mypy.overrides]]
+module = ["authlib.*", "expiringdict"]
 ignore_missing_imports = true
 
 [tool.ruff]
