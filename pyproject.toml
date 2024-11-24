@@ -19,7 +19,6 @@ dependencies = [
     "boto3>=1.34.93",
     "expiringdict>=1.2.2",
     "fastapi[standard]>=0.115.5",
-    "gunicorn>=22.0.0",
     "httpx>=0.27.0",
     "itsdangerous>=2.2.0",
     "pillow>=10.3.0",
@@ -62,7 +61,7 @@ types = [
 
 [tool.pdm]
 [tool.pdm.scripts]
-dev = "fastapi dev valhalla/app.py"
+dev = "fastapi dev"
 test.composite = [
     "coverage run -m pytest",
     "coverage report",
