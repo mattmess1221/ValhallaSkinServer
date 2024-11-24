@@ -9,7 +9,7 @@ description = "An alternative skin server for Minecraft supporting metadata and 
 authors = [
     { name = "Matthew Messinger", email = "mattmess1221@gmail.com" },
 ]
-license = "MIT"
+license = "AGPL-3.0-only"
 
 dependencies = [
     "aiofiles>=23.2.1",
