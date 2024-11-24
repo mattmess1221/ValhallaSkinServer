@@ -18,7 +18,7 @@ from ..auth import current_user
 from ..config import Env, settings
 from ..crud import CRUD
 from ..db import get_db
-from ..models import reg
+from ..models import Base
 
 assets = Path(__file__).parent / "assets"
 
@@ -35,7 +35,7 @@ TestingSessionLocal = async_sessionmaker[AsyncSession](engine)
 @asynccontextmanager
 async def app_lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
     async with engine.begin() as conn:
-        await conn.run_sync(reg.metadata.create_all)
+        await conn.run_sync(Base.metadata.create_all)
     yield
 
 
@@ -68,7 +68,7 @@ app.dependency_overrides[current_user] = override_current_user
 
 
 @pytest.fixture
-def client(tmpdir: Path) -> Generator[TestClient, Any, None]:
+def client(tmpdir: Path) -> Generator[TestClient]:
     settings.textures_path = str(tmpdir)
     with TestClient(app) as client:
         yield client

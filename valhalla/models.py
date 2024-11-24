@@ -5,14 +5,21 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, func
-from sqlalchemy.orm import Mapped, mapped_column, registry, relationship
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    MappedAsDataclass,
+    mapped_column,
+    relationship,
+)
 from sqlalchemy.types import JSON
 
-reg = registry()
+
+class Base(MappedAsDataclass, DeclarativeBase):
+    pass
 
 
-@reg.mapped_as_dataclass
-class User:
+class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     uuid: Mapped[UUID] = mapped_column(unique=True)
@@ -26,8 +33,7 @@ class User:
     )
 
 
-@reg.mapped_as_dataclass
-class Upload:
+class Upload(Base):
     __tablename__ = "uploads"
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     hash: Mapped[str] = mapped_column(unique=True)
@@ -42,8 +48,7 @@ class Upload:
     )
 
 
-@reg.mapped_as_dataclass
-class Texture:
+class Texture(Base):
     __tablename__ = "textures"
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
