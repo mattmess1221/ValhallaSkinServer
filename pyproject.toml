@@ -44,6 +44,7 @@ test = [
     "moto[s3,sts]>=5.0.5",
     "pytest>=8.1.2",
     "pytest-httpx>=0.30.0",
+    "pytest-sugar>=1.0.0",
 ]
 dev = [
     "pre-commit>=3.7.0",
@@ -82,8 +83,11 @@ exclude_lines = [
     "@overload",
     "class .*Protocol"
 ]
+skip_covered = true
+skip_empty = true
 
 [tool.coverage.run]
+branch = true
 omit = [
     ".vscode*",
 ]
