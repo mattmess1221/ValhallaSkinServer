@@ -21,4 +21,4 @@ jobs:
 
     - name: Type Check with mypy
       run: |
-        pdm run mypy
+        pdm run mypy valhalla
