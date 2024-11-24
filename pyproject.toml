@@ -1,3 +1,7 @@
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
 [project]
 name = "valhalla"
 version = "1.1.0"
@@ -5,70 +9,67 @@ description = "An alternative skin server for Minecraft supporting metadata and 
 authors = [
     { name = "Matthew Messinger", email = "mattmess1221@gmail.com" },
 ]
+license = "MIT"
+
 dependencies = [
     "aiofiles>=23.2.1",
+    "aiosqlite>=0.20.0",
     "alembic>=1.13.1",
     "authlib>=1.3.0",
+    "boto3>=1.34.93",
     "expiringdict>=1.2.2",
-    "fastapi>=0.115.4,<0.116.0",
-    "pydantic>=2.7.1",
-    "pydantic-settings>=2.2.1",
+    "fastapi[standard]>=0.115.5",
+    "gunicorn>=22.0.0",
     "httpx>=0.27.0",
     "itsdangerous>=2.2.0",
     "pillow>=10.3.0",
+    "psycopg[binary]>=3.1.18",
+    "pydantic>=2.7.1",
+    "pydantic-settings>=2.2.1",
     "python-dotenv>=1.0.1",
     "python-jose>=3.3.0",
     "python-multipart>=0.0.9",
-    "sqlalchemy[asyncio]>=2.0.29",
-    "psycopg[binary]>=3.1.18",
-    "uvicorn>=0.29.0",
-    "gunicorn>=22.0.0",
-    "boto3>=1.34.93",
     "slowapi>=0.1.9",
+    "sqlalchemy[asyncio]>=2.0.29",
+    "uvicorn>=0.29.0",
 ]
-requires-python = ">=3.12,<4.0"
+requires-python = ">=3.12"
 
 [project.urls]
 repository = "https://github.com/killjoy1221/ValhallaSkinServer"
 
-[build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
-
-[tool.pdm]
-
-[tool.pdm.scripts]
-dev.cmd = "uvicorn valhalla.app:app --reload"
-dev.env = { ENV = "dev", DEBUG = "1" }
-cov = "pytest --cov"
-lint.composite = ["ruff check --fix", "ruff format"]
-
-[tool.pdm.dev-dependencies]
+[dependency-groups]
 test = [
-    "pytest>=8.1.2",
-    "pytest-cov>=5.0.0",
-    "aiosqlite>=0.20.0",
+    "coverage>=7.6.7",
     "moto[s3,sts]>=5.0.5",
+    "pytest>=8.1.2",
     "pytest-httpx>=0.30.0",
 ]
 dev = [
     "pre-commit>=3.7.0",
-    "aiosqlite>=0.20.0",
 ]
 lint = [
     "ruff>=0.4.2",
 ]
 types = [
+    "boto3-stubs[s3,sts]>=1.34.93",
     "mypy>=1.10.0",
     "types-aiofiles>=23.2.0.20240403",
     "types-pillow>=10.2.0.20240423",
     "types-python-jose>=3.3.4.20240106",
-    "boto3-stubs[s3,sts]>=1.34.93",
 ]
 
-[tool.pytest.ini_options]
-norecursedirs = [
-    "__pypackages__"
+[tool.pdm]
+[tool.pdm.scripts]
+dev = "fastapi dev valhalla/app.py"
+test.composite = [
+    "coverage run -m pytest",
+    "coverage report",
+    "coverage xml",
+]
+lint.composite = [
+    "ruff check --fix",
+    "ruff format",
 ]
 
 [tool.coverage]
@@ -85,7 +86,6 @@ exclude_lines = [
 [tool.coverage.run]
 omit = [
     ".vscode*",
-    "__pypackages__/*",
 ]
 
 [tool.mypy]
@@ -95,15 +95,12 @@ plugins = [
 ignore_missing_imports = true
 
 [tool.ruff]
-target-version = 'py312'
-
 [tool.ruff.lint]
 select = [
     "F", "E", "W", "B", "SIM", "I", "ANN", "UP",
-    "YTT", "FBT", "ASYNC", "TRIO", "C4", "DTZ",
+    "YTT", "FBT", "ASYNC", "C4", "DTZ",
     "PIE", "RET", "SLF", "TRY", "FLY", "PERF", "RUF"
 ]
-ignore = ["ANN1"]
 
 [tool.ruff.lint.flake8-annotations]
 mypy-init-return = true

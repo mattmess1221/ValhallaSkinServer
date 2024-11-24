@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
@@ -30,16 +30,26 @@ async def app_lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
 
 app = FastAPI(
     title="Valhalla Skin Server",
-    version=valhalla.__version__,
+    version=".".join(valhalla.__version__.split(".")[:2]),
     description=valhalla.__usage__,
     license_info={
-        "name": "MIT License",
-        "url": "https://github.com/killjoy1221/ValhallaSkinServer/blob/main/LICENSE",
+        "name": "Licensed with Open Source",
+        "identifier": valhalla.__metadata__.get("License-Expression"),
     },
     lifespan=app_lifespan,
 )
 
 limit.setup(app)
+
+
+@app.get("/")
+async def index() -> RedirectResponse:
+    for url in valhalla.__metadata__.get_all("Project-URL", []):
+        name, url = str(url).split(", ")
+        if name.lower() == "repository":
+            return RedirectResponse(url, status.HTTP_308_PERMANENT_REDIRECT)
+
+    raise HTTPException(status.HTTP_404_NOT_FOUND)
 
 
 @app.middleware("http")
@@ -53,15 +63,6 @@ async def redirect_http_to_https(
         url = request.url.replace(scheme="https")
         return RedirectResponse(url, status.HTTP_308_PERMANENT_REDIRECT)
     return await call_next(request)
-
-
-@app.api_route("/echo", include_in_schema=False)
-async def echo(request: Request) -> dict[str, Any]:
-    return {
-        "headers": request.headers,
-        "url": str(request.url),
-        "method": request.method,
-    }
 
 
 app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
