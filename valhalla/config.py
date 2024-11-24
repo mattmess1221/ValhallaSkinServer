@@ -70,8 +70,10 @@ class Settings(BaseSettings):
         return resolve_db(self.database_url)
 
     def get_textures_url(self) -> str | None:
-        url = str(self.textures_url or "")
-        if not url.endswith("/"):
+        if self.textures_url is None:
+            return None
+        url = str(self.textures_url)
+        if url and not url.endswith("/"):
             url += "/"
         return url
 
