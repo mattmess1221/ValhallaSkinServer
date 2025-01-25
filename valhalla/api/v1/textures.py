@@ -120,7 +120,9 @@ async def upload_file(
     files: Files,
 ) -> None:
     if texture_type in settings.texture_type_denylist:
-        raise HTTPException(status.HTTP_400, "That texture type is not allowed")
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "That texture type is not allowed"
+        )
     texture_hash = await anyio.to_thread.run_sync(image.gen_skin_hash, file)
     upload = await crud.get_upload(texture_hash)
     if not upload:
