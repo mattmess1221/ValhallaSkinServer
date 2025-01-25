@@ -12,25 +12,24 @@ authors = [
 license = "AGPL-3.0-only"
 
 dependencies = [
-    "aiofiles>=23.2.1",
+    "aiofiles>=24.1.0",
     "aiosqlite>=0.20.0",
-    "alembic>=1.13.1",
-    "authlib>=1.3.0",
-    "boto3>=1.34.93",
+    "alembic>=1.14.1",
+    "authlib>=1.4.0",
+    "boto3>=1.36.6",
     "expiringdict>=1.2.2",
-    "fastapi[standard]>=0.115.5",
-    "httpx>=0.27.0",
+    "fastapi[standard]>=0.115.7",
+    "httpx>=0.28.1",
     "itsdangerous>=2.2.0",
-    "pillow>=10.3.0",
-    "psycopg[binary]>=3.1.18",
-    "pydantic>=2.7.1",
-    "pydantic-settings>=2.2.1",
+    "pillow>=11.1.0",
+    "psycopg[binary]>=3.2.4",
+    "pydantic>=2.10.6",
+    "pydantic-settings>=2.7.1",
     "python-dotenv>=1.0.1",
     "python-jose>=3.3.0",
-    "python-multipart>=0.0.9",
+    "python-multipart>=0.0.20",
     "slowapi>=0.1.9",
-    "sqlalchemy[asyncio]>=2.0.29",
-    "uvicorn>=0.29.0",
+    "sqlalchemy[asyncio]>=2.0.37",
 ]
 requires-python = ">=3.13"
 
@@ -39,23 +38,23 @@ repository = "https://github.com/killjoy1221/ValhallaSkinServer"
 
 [dependency-groups]
 test = [
-    "coverage>=7.6.7",
-    "moto[s3,sts]>=5.0.5",
-    "pytest>=8.1.2",
-    "pytest-httpx>=0.30.0",
+    "coverage>=7.6.10",
+    "moto[s3,sts]>=5.0.27",
+    "pytest>=8.3.4",
+    "pytest-httpx>=0.35.0",
     "pytest-sugar>=1.0.0",
 ]
 dev = [
-    "pre-commit>=3.7.0",
+    "pre-commit>=4.1.0",
 ]
 lint = [
-    "ruff>=0.4.2",
+    "ruff>=0.9.3",
 ]
 types = [
-    "boto3-stubs[s3,sts]>=1.34.93",
-    "mypy>=1.10.0",
-    "types-aiofiles>=23.2.0.20240403",
-    "types-pillow>=10.2.0.20240423",
+    "boto3-stubs[s3,sts]>=1.36.6",
+    "mypy>=1.14.1",
+    "types-aiofiles>=24.1.0.20241221",
+    "types-pillow>=10.2.0.20240822",
     "types-python-jose>=3.3.4.20240106",
 ]
 
