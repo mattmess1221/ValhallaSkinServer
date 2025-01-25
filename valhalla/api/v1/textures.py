@@ -130,15 +130,25 @@ async def upload_file(
     await crud.put_texture(user, texture_type, upload, meta or {})
 
 
+@router.delete("/textures")
+async def delete_texture(
+    user: Annotated[models.User, Depends(require_user)],
+    crud: Annotated[CRUD, Depends()],
+    type: schemas.TextureType,
+) -> None:
+    await crud.put_texture(user, type, None)
+    await crud.db.commit()
+
+
 class DeleteTexture(BaseModel):
     type: schemas.TextureType
 
 
-@router.delete("/texture")
-async def delete_texture(
+# deprecated, delete shouldn't have a body, and it's missing a s
+@router.delete("/texture", deprecated=True)
+async def delete_texture_deprecated(
     texture: DeleteTexture,
     user: Annotated[models.User, Depends(require_user)],
     crud: Annotated[CRUD, Depends()],
 ) -> None:
-    await crud.put_texture(user, texture.type, None)
-    await crud.db.commit()
+    await delete_texture(user, crud, texture.type)

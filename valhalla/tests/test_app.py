@@ -139,3 +139,13 @@ def test_skin_metadata_url(client: TestClient, user: TestUser) -> None:
     resp = client.get("/api/v1/textures", headers=user.auth_header)
     assert resp.status_code == 200
     assert resp.json()["skin"]["metadata"] == {"model": "slim"}
+
+
+def test_skin_delete(client: TestClient, user: TestUser) -> None:
+    test_skin_metadata(client, user)
+
+    resp = client.delete(
+        "/api/v1/textures", headers=user.auth_header, params={"type": "skin"}
+    )
+
+    assert resp.status_code == 200

@@ -104,5 +104,4 @@ async def delete_skin_old(
     crud: Annotated[CRUD, Depends()],
     skin_type: str,
 ) -> None:
-    texture = textures.DeleteTexture(type=skin_type)
-    await textures.delete_texture(texture, user, crud)
+    await textures.delete_texture(user, crud, skin_type)
