@@ -92,7 +92,7 @@ async def post_texture(
     body: schemas.TexturePost,
 ) -> None:
     file = await download_file(str(body.file), max_upload_size)
-    await upload_file(user, body.type, file, body.metadata, crud, files)
+    await upload_file(user, body.type, file, body.meta, crud, files)
     await crud.db.commit()
 
 

@@ -147,7 +147,7 @@ TextureType = Annotated[str, AfterValidator(validate_texture_type)]
 class TexturePost(BaseModel):
     type: TextureType
     file: AnyHttpUrl
-    metadata: dict[str, str] | None = None
+    meta: dict[str, str] | None = None
 
 
 class BulkRequest(BaseModel):

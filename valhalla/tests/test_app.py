@@ -122,3 +122,20 @@ def test_skin_metadata(client: TestClient, user: TestUser) -> None:
     resp = client.get("/api/v1/textures", headers=user.auth_header)
     assert resp.status_code == 200
     assert resp.json()["skin"]["metadata"] == {"model": "slim"}
+
+
+def test_skin_metadata_url(client: TestClient, user: TestUser) -> None:
+    resp = client.post(
+        "/api/v1/textures",
+        json={
+            "type": "skin",
+            "file": steve_url,
+            "meta": {"model": "slim"},
+        },
+        headers=user.auth_header,
+    )
+    assert resp.status_code == 200
+
+    resp = client.get("/api/v1/textures", headers=user.auth_header)
+    assert resp.status_code == 200
+    assert resp.json()["skin"]["metadata"] == {"model": "slim"}
