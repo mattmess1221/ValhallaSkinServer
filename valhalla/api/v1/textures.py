@@ -5,7 +5,7 @@ import anyio.to_thread
 import httpx
 from aiofiles.tempfile import TemporaryFile
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, Json
 from starlette import status
 
 from valhalla.config import settings
@@ -104,7 +104,7 @@ async def put_texture(
     file: Annotated[UploadFile, File()],
     file_size: Annotated[int, Depends(valid_content_length)],
     type: Annotated[schemas.TextureType, Form()] = "skin",
-    meta: Annotated[dict[str, str] | None, Form()] = None,
+    meta: Annotated[Json[dict[str, str]] | None, Form()] = None,
 ) -> None:
     body = await read_upload(iter_upload_file(file), file_size)
     await upload_file(user, type, body, meta, crud, files)

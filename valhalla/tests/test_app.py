@@ -1,3 +1,4 @@
+import json
 from io import BytesIO
 from pathlib import Path
 
@@ -107,3 +108,17 @@ def test_bad_namespaced_tex_type(client: TestClient, user: TestUser) -> None:
         data={"type": "minecraft:skin"},
     )
     assert resp.status_code == 400
+
+
+def test_skin_metadata(client: TestClient, user: TestUser) -> None:
+    resp = client.put(
+        "/api/v1/textures",
+        data={"meta": json.dumps({"model": "slim"})},
+        files={"file": (steve_file.name, steve_file.read_bytes(), "image/png")},
+        headers=user.auth_header,
+    )
+    assert resp.status_code == 200
+
+    resp = client.get("/api/v1/textures", headers=user.auth_header)
+    assert resp.status_code == 200
+    assert resp.json()["skin"]["metadata"] == {"model": "slim"}
