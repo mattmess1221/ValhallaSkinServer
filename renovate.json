@@ -1,6 +1,7 @@
 {
-    "extends": ["config:recommended", ":rebaseStalePrs", "schedule:monthly"],
+    "extends": ["config:recommended", ":rebaseStalePrs"],
     "lockFileMaintenance": {
-        "enabled": true
+        "enabled": true,
+        "schedule": ["* 0-3 1 * *"]
     }
 }
