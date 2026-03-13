@@ -50,7 +50,7 @@ dev = [
     "pre-commit>=4.1.0",
 ]
 lint = [
-    "ruff>=0.9.3",
+    "ruff>=0.15.6",
 ]
 types = [
     "boto3-stubs[s3,sts]>=1.36.6",

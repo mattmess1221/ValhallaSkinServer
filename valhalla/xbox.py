@@ -1,7 +1,7 @@
 import datetime
 import enum
 from collections.abc import Awaitable, Callable
-from typing import Any, TypeVar, overload
+from typing import Any, overload
 from uuid import UUID
 
 import httpx
@@ -158,15 +158,8 @@ async def login_with_xbox(xbl_access_token: str) -> MinecraftProfile:
         return await login(xbl_access_token)
 
 
-T1 = TypeVar("T1")
-T2 = TypeVar("T2")
-T3 = TypeVar("T3")
-T4 = TypeVar("T4")
-T5 = TypeVar("T5")
-
-
 @overload
-async def compose(
+async def compose[T1, T2](
     payload: T1,
     func1: Callable[[T1], Awaitable[T2]],
     /,
@@ -174,7 +167,7 @@ async def compose(
 
 
 @overload
-async def compose(
+async def compose[T1, T2, T3](
     payload: T1,
     func1: Callable[[T1], Awaitable[T2]],
     func2: Callable[[T2], Awaitable[T3]],
@@ -183,7 +176,7 @@ async def compose(
 
 
 @overload
-async def compose(
+async def compose[T1, T2, T3, T4](
     payload: T1,
     func1: Callable[[T1], Awaitable[T2]],
     func2: Callable[[T2], Awaitable[T3]],
@@ -193,7 +186,7 @@ async def compose(
 
 
 @overload
-async def compose(
+async def compose[T1, T2, T3, T4, T5](
     payload: T1,
     func1: Callable[[T1], Awaitable[T2]],
     func2: Callable[[T2], Awaitable[T3]],
