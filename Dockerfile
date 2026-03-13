@@ -1,5 +1,7 @@
-FROM python:3.13
+FROM python:3.13 AS python_base
+WORKDIR /app
 
+FROM python_base AS builder
 # heroku provides the SOURCE_VERSION env var with commit
 ARG SOURCE_VERSION=0.0.0
 
@@ -10,19 +12,15 @@ ENV UV_NO_DEFAULT_GROUPS=1 \
     UV_LOCKED=1 \
     UV_NO_MANAGED_PYTHON=1
 
-WORKDIR /app
-
-RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
-    --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --no-install-project
+COPY --from=ghcr.io/astral-sh/uv /uv /uvx /bin/
 
 COPY . /app
 
-RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
-    --mount=type=cache,target=/root/.cache/uv \
-    uv sync
+RUN uv sync
+
+FROM python_base
+
+COPY --from=builder /app /app
 
 ENV PATH=$PATH:/app/.venv/bin
 
