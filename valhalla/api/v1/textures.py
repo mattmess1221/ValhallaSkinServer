@@ -67,7 +67,7 @@ async def read_upload(file: AsyncIterable[bytes], file_size: int) -> bytes:
         async for chunk in file:
             real_file_size += len(chunk)
             if real_file_size > file_size:
-                raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+                raise HTTPException(status.HTTP_413_CONTENT_TOO_LARGE)
             await temp.write(chunk)
         await temp.seek(0)
         return await temp.read()
