@@ -33,7 +33,7 @@ dependencies = [
     "slowapi>=0.1.9",
     "sqlalchemy[asyncio]>=2.0.37",
 ]
-requires-python = "==3.13.*"
+requires-python = "==3.14.*"
 
 [project.urls]
 repository = "https://github.com/killjoy1221/ValhallaSkinServer"
