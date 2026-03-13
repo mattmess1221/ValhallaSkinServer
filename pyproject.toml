@@ -28,10 +28,10 @@ dependencies = [
     "pydantic>=2.10.6",
     "pydantic-settings>=2.7.1",
     "python-dotenv>=1.0.1",
-    "python-jose>=3.3.0",
     "python-multipart>=0.0.20",
     "slowapi>=0.1.9",
     "sqlalchemy[asyncio]>=2.0.37",
+    "joserfc>=1.6.3",
 ]
 requires-python = "==3.14.*"
 

@@ -3,7 +3,8 @@ from typing import Annotated
 
 from fastapi import Cookie, Depends, HTTPException
 from fastapi.security import OAuth2
-from jose import JWTError, jwt
+from joserfc import jwt
+from joserfc.errors import JoseError
 from starlette import status
 
 from . import models
@@ -26,7 +27,7 @@ async def current_user(
 
     try:
         return await user_from_token(token, crud)
-    except JWTError:
+    except JoseError:
         return None
 
 
