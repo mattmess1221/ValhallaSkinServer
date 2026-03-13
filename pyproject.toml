@@ -1,6 +1,6 @@
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["uv_build>=0.10.0,<0.11.0"]
+build-backend = "uv_build"
 
 [project]
 name = "valhalla"
@@ -33,16 +33,16 @@ dependencies = [
     "slowapi>=0.1.9",
     "sqlalchemy[asyncio]>=2.0.37",
 ]
-requires-python = ">=3.13"
+requires-python = "==3.13.*"
 
 [project.urls]
 repository = "https://github.com/killjoy1221/ValhallaSkinServer"
 
 [dependency-groups]
 test = [
-    "coverage>=7.6.10",
     "moto[s3,sts]>=5.0.27",
     "pytest>=8.3.4",
+    "pytest-cov>=7.0.0",
     "pytest-httpx>=0.35.0",
     "pytest-sugar>=1.0.0",
 ]
@@ -50,28 +50,19 @@ dev = [
     "pre-commit>=4.1.0",
 ]
 lint = [
-    "ruff>=0.15.6",
-]
-types = [
     "boto3-stubs[s3,sts]>=1.36.6",
     "mypy>=1.14.1",
+    "ruff>=0.15.6",
     "types-aiofiles>=24.1.0.20241221",
     "types-pillow>=10.2.0.20240822",
     "types-python-jose>=3.3.4.20240106",
 ]
 
-[tool.pdm]
-[tool.pdm.scripts]
-dev = "fastapi dev"
-test.composite = [
-    "coverage run -m pytest",
-    "coverage report",
-    "coverage xml",
-]
-lint.composite = [
-    "ruff check --fix",
-    "ruff format",
-]
+[tool.uv]
+default-groups = "all"
+
+[tool.uv.build-backend]
+module-root = "."
 
 [tool.coverage]
 [tool.coverage.report]

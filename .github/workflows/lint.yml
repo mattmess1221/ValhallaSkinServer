@@ -1,0 +1,41 @@
+name: lint
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      UV_LOCKED: 1
+      UV_NO_DEFAULT_GROUPS: 1
+      UV_NO_SYNC: 1
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        version: "0.10.9"
+
+    - name: Setup Python
+      run: uv python install
+
+    - name: Install dependencies
+      run: |
+        uv sync --group test --group lint
+
+    - name: Lint with ruff
+      run: uv run ruff check
+
+    - name: Format with ruff
+      run: uv run ruff format --check
+    
+    - name: Testing code with pytest
+      run: |
+        uv run pytest --cov --cov-report=term --cov-report=xml
+
+    - name: Type Check with mypy
+      run: |
+        uv run mypy valhalla
+

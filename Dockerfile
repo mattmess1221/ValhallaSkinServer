@@ -1,33 +1,33 @@
-FROM python:3.13 AS python-base
-ENV PIP_NO_CACHE_DIR=no \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_ROOT_USER_ACTION=ignore
+FROM python:3.13
 
-FROM python-base AS builder
 # heroku provides the SOURCE_VERSION env var with commit
 ARG SOURCE_VERSION=0.0.0
-ENV PDM_CHECK_UPDATE=False \
-    PDM_PEP517_SCM_VERSION=$SOURCE_VERSION
 
-RUN pip install -q pdm==2.20.1
+ENV UV_NO_DEFAULT_GROUPS=1 \
+    UV_LOCKED=1 \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_LOCKED=1 \
+    UV_NO_MANAGED_PYTHON=1
 
-COPY pyproject.toml pdm.lock README.md /project/
-COPY valhalla USAGE.md /project/valhalla/
+WORKDIR /app
 
-WORKDIR /project
-RUN pdm install --prod --frozen-lockfile --no-editable
+RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
+    --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --no-install-project
 
-FROM python-base
+COPY . /app
 
-WORKDIR /project
+RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
+    --mount=type=cache,target=/root/.cache/uv \
+    uv sync
 
-COPY --from=builder /project/.venv .venv
-COPY alembic.ini alembic.ini
-COPY app.py app.py
-
-ENV PATH=$PATH:/project/.venv/bin
+ENV PATH=$PATH:/app/.venv/bin
 
 # default port, heroku can override this
 ENV PORT=8080
 CMD alembic upgrade head && \
     fastapi run --port $PORT --proxy-headers
+
