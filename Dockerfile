@@ -1,4 +1,4 @@
-FROM python:3.14 AS python_base
+FROM python:3.14-slim AS python_base
 WORKDIR /app
 
 FROM python_base AS builder
@@ -12,7 +12,7 @@ ENV UV_NO_DEFAULT_GROUPS=1 \
     UV_LOCKED=1 \
     UV_NO_MANAGED_PYTHON=1
 
-COPY --from=ghcr.io/astral-sh/uv /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.10.9 /uv /uvx /bin/
 
 COPY . /app
 
@@ -28,4 +28,3 @@ ENV PATH=$PATH:/app/.venv/bin
 ENV PORT=8080
 CMD alembic upgrade head && \
     fastapi run --port $PORT --proxy-headers
-
