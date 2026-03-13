@@ -1,9 +1,10 @@
+import hashlib
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import Cookie, Depends, HTTPException
 from fastapi.security import OAuth2
-from joserfc import jwt
+from joserfc import jwk, jwt
 from joserfc.errors import JoseError
 from starlette import status
 
@@ -39,16 +40,22 @@ def require_user(
     return user
 
 
+jose_key = jwk.import_key(
+    hashlib.sha256(settings.secret_key.encode()).digest(), key_type="oct"
+)
+
+
 def token_from_user(user: models.User, *, expire_in: timedelta) -> str:
-    payload = {
+    header = {"alg": "HS256"}
+    claims = {
         "sid": user.id,
         "iat": datetime.now(UTC),
         "exp": datetime.now(UTC) + expire_in,
     }
-    return jwt.encode(payload, settings.secret_key, algorithm="HS256")
+    return jwt.encode(header, claims, key=jose_key)
 
 
 async def user_from_token(token: str, crud: CRUD) -> models.User | None:
-    payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
-    sid = payload["sid"]
+    claims = jwt.decode(token, key=jose_key, algorithms=["HS256"]).claims
+    sid = claims["sid"]
     return await crud.get_user(sid)
