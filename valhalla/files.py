@@ -21,7 +21,7 @@ class Filesystem(Protocol):
 
 @dataclass
 class S3Path:
-    s3_client: "S3Client"
+    s3_client: S3Client
     bucket: str
     path: str
 

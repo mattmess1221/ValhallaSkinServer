@@ -25,10 +25,10 @@ class User(Base):
     uuid: Mapped[UUID] = mapped_column(unique=True)
     name: Mapped[str] = mapped_column()
 
-    textures: Mapped[list["Texture"]] = relationship(
+    textures: Mapped[list[Texture]] = relationship(
         back_populates="user", init=False, lazy="selectin", repr=False
     )
-    uploads: Mapped[list["Upload"]] = relationship(
+    uploads: Mapped[list[Upload]] = relationship(
         back_populates="user", init=False, lazy="selectin", repr=False
     )
 
@@ -43,7 +43,7 @@ class Upload(Base):
     )
 
     user: Mapped[User] = relationship(back_populates="uploads", init=False, repr=False)
-    textures: Mapped[list["Texture"]] = relationship(
+    textures: Mapped[list[Texture]] = relationship(
         back_populates="upload", init=False, repr=False
     )
 
@@ -63,9 +63,9 @@ class Texture(Base):
     )
     end_time: Mapped[datetime | None] = mapped_column(default=None)
 
-    user: Mapped["User"] = relationship(
+    user: Mapped[User] = relationship(
         back_populates="textures", init=False, lazy="selectin", repr=False
     )
-    upload: Mapped["Upload"] = relationship(
+    upload: Mapped[Upload] = relationship(
         back_populates="textures", init=False, lazy="selectin", repr=False
     )
