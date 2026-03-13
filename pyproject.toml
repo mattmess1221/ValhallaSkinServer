@@ -12,7 +12,6 @@ authors = [
 license = "AGPL-3.0-only"
 
 dependencies = [
-    "aiofiles>=24.1.0",
     "aiosqlite>=0.20.0",
     "alembic>=1.14.1",
     "authlib>=1.4.0",
@@ -53,7 +52,6 @@ lint = [
     "boto3-stubs[s3,sts]>=1.36.6",
     "mypy>=1.14.1",
     "ruff>=0.15.6",
-    "types-aiofiles>=24.1.0.20241221",
     "types-pillow>=10.2.0.20240822",
 ]
 

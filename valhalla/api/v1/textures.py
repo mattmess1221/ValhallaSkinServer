@@ -3,7 +3,7 @@ from typing import Annotated, Any
 
 import anyio.to_thread
 import httpx
-from aiofiles.tempfile import TemporaryFile
+from anyio import TemporaryFile
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
 from pydantic import BaseModel, Json
 from starlette import status
