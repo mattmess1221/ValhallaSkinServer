@@ -55,7 +55,6 @@ lint = [
     "ruff>=0.15.6",
     "types-aiofiles>=24.1.0.20241221",
     "types-pillow>=10.2.0.20240822",
-    "types-python-jose>=3.3.4.20240106",
 ]
 
 [tool.uv]
