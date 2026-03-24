@@ -1,7 +1,13 @@
 {
-    "extends": ["config:recommended", ":rebaseStalePrs"],
+    "extends": [
+        "config:recommended",
+        ":rebaseStalePrs",
+        "github>mattmess1221/renovate-config"
+    ],
     "lockFileMaintenance": {
         "enabled": true,
-        "schedule": ["* 0-3 1 * *"]
+        "schedule": [
+            "* 0-3 1 * *"
+        ]
     }
 }
