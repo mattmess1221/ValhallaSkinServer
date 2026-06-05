@@ -49,8 +49,8 @@ async def get_user_texture_history(
 ) -> schemas.UserTextureHistory:
     textures = await crud.get_user_textures_history(user, limit=limit, at=at)
     return schemas.UserTextureHistory(
-        profile_id=user.uuid,  # type: ignore
-        profile_name=user.name,  # type: ignore
+        profile_id=user.uuid,
+        profile_name=user.name,
         textures={
             key: [
                 schemas.TextureHistoryEntry(

@@ -58,8 +58,8 @@ async def get_user_textures(
 ) -> schemas.UserTextures:
     textures = await crud.get_user_textures(user, at=at)
     return schemas.UserTextures(
-        profile_id=user.uuid,  # type: ignore
-        profile_name=user.name,  # type: ignore
+        profile_id=user.uuid,
+        profile_name=user.name,
         textures={
             k: schemas.Texture(
                 url=urljoin(textures_url, v.upload.hash),
