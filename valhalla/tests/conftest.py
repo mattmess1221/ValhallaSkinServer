@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi import Depends, FastAPI, Header
 from fastapi.testclient import TestClient
-from pytest_httpx import HTTPXMock
+from pytest_httpx2 import HTTPXMock
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from valhalla.models import User
@@ -103,10 +103,10 @@ def users() -> list[TestUser]:
 
 
 @pytest.fixture(scope="function")
-def steve_uri(request: pytest.FixtureRequest, httpx_mock: HTTPXMock) -> str | Path:
+def steve_uri(request: pytest.FixtureRequest, httpx2_mock: HTTPXMock) -> str | Path:
     uri: tuple[str, Path] | Path = request.param
     if isinstance(uri, tuple):
         url, path = uri
-        httpx_mock.add_response(url=url, content=path.read_bytes())
+        httpx2_mock.add_response(url=url, content=path.read_bytes())
         return url
     return uri
