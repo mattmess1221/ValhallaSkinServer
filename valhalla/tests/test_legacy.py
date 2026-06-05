@@ -22,7 +22,7 @@ def build_request_kwargs(file: str | Path) -> tuple[str, dict]:
     [(steve_url, steve_file), steve_file],
     indirect=True,
 )
-@pytest.mark.httpx2_mock(can_send_already_matched_responses=True)
+@pytest.mark.httpx_mock(can_send_already_matched_responses=True)
 def test_legacy_upload(
     steve_uri: str | Path, client: TestClient, user: TestUser
 ) -> None:
@@ -37,7 +37,7 @@ def test_legacy_upload(
     "steve_uri",
     [steve_url, steve_file],
 )
-@pytest.mark.httpx2_mock(can_send_already_matched_responses=True)
+@pytest.mark.httpx_mock(can_send_already_matched_responses=True)
 def test_legacy_upload_wrong_user(
     steve_uri: str | Path, client: TestClient, user: TestUser
 ) -> None:
@@ -53,7 +53,7 @@ def test_legacy_upload_wrong_user(
     [(steve_url, steve_file), steve_file],
     indirect=True,
 )
-@pytest.mark.httpx2_mock(can_send_already_matched_responses=True)
+@pytest.mark.httpx_mock(can_send_already_matched_responses=True)
 def test_legacy_v0(steve_uri: str | Path, client: TestClient, user: TestUser) -> None:
     method, kwargs = build_request_kwargs(steve_uri)
     resp = client.request(
