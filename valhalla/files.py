@@ -1,7 +1,7 @@
-import pathlib
 from dataclasses import dataclass
 from io import BytesIO
-from typing import TYPE_CHECKING, Annotated, Any, Protocol, Self
+from pathlib import Path
+from typing import TYPE_CHECKING, Annotated, Protocol, Self, override
 
 import boto3
 import botocore.exceptions
@@ -15,16 +15,34 @@ if TYPE_CHECKING:
 
 class Filesystem(Protocol):
     def exists(self) -> bool: ...
-    def write_bytes(self, data: bytes) -> Any: ...  # noqa: ANN401
+    def write_bytes(self, data: bytes, *, content_type: str | None = None) -> int: ...
     def __truediv__(self, key: str) -> Self: ...
 
 
 @dataclass
-class S3Path:
+class FilePath(Filesystem):
+    path: Path
+
+    @override
+    def exists(self) -> bool:
+        return self.path.exists()
+
+    @override
+    def write_bytes(self, data: bytes, *, content_type: str | None = None) -> int:
+        return self.path.write_bytes(data)
+
+    @override
+    def __truediv__(self, key: str) -> Self:
+        return type(self)(self.path / key)
+
+
+@dataclass
+class S3Path(Filesystem):
     s3_client: S3Client
     bucket: str
     path: str
 
+    @override
     def exists(self) -> bool:
         try:
             self.s3_client.head_object(Bucket=self.bucket, Key=self.path)
@@ -35,9 +53,15 @@ class S3Path:
         else:
             return True
 
-    def write_bytes(self, data: bytes) -> None:
-        self.s3_client.upload_fileobj(BytesIO(data), self.bucket, self.path)
+    @override
+    def write_bytes(self, data: bytes, *, content_type: str | None = None) -> int:
+        extra = {}
+        if content_type is not None:
+            extra["ContentType"] = content_type
+        self.s3_client.upload_fileobj(BytesIO(data), self.bucket, self.path, extra)
+        return len(data)
 
+    @override
     def __truediv__(self, key: str) -> Self:
         return type(self)(self.s3_client, self.bucket, f"{self.path}/{key}")
 
@@ -46,10 +70,10 @@ def get_filesystem(config: Annotated[Settings, Depends(get_settings)]) -> Filesy
     bucket = config.textures_bucket
     if bucket is None:
         # bucket not set, use local files for storage
-        path = pathlib.Path(config.textures_path)
+        path = Path(config.textures_path)
         if not path.exists():
             path.mkdir(parents=True)
-        return path
+        return FilePath(path)
 
     # use s3 for storage
     s3_client = boto3.client("s3")
@@ -66,7 +90,7 @@ class Files:
         file = self.fs / skin_hash
 
         if not file.exists():
-            file.write_bytes(data)
+            file.write_bytes(data, content_type="image/png")
 
 
 def verify_aws_credentials() -> None:
