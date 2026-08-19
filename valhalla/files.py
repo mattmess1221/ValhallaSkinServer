@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
 
-import boto3
 from fastapi import Depends
 
 from .config import Settings, get_settings
@@ -38,8 +37,3 @@ class Files:
         file = self.save_path / skin_hash
         if not file.exists():
             file.write_bytes(data)
-
-
-def verify_aws_credentials() -> None:
-    sts_client = boto3.client("sts")
-    sts_client.get_caller_identity()

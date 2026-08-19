@@ -3,6 +3,7 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
+import boto3
 from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
@@ -22,9 +23,8 @@ async def app_lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
         await session.run_sync(models.Base.metadata.create_all)
 
     if settings.textures_bucket and settings.verify_aws_credentials:
-        from .files import verify_aws_credentials
-
-        verify_aws_credentials()
+        sts_client = boto3.client("sts")
+        sts_client.get_caller_identity()
 
     yield
 
