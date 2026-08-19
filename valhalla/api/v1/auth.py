@@ -58,14 +58,11 @@ async def minecraft_login_callback(
     if verify_token not in validate_tokens:
         raise HTTPException(403)
 
-    try:
-        xname, addr = validate_tokens[verify_token]
-        if xname != name:
-            raise HTTPException(403)
-        if addr != client:
-            raise HTTPException(403)
-    finally:
-        del validate_tokens[verify_token]
+    xname, addr = validate_tokens.pop(verify_token)
+    if xname != name:
+        raise HTTPException(403)
+    if addr != client:
+        raise HTTPException(403)
 
     joined = await mojang.has_joined(
         username=name,
