@@ -1398,7 +1398,6 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "pre-commit" },
-    { name = "tomlkit" },
 ]
 lint = [
     { name = "boto3-stubs", extra = ["s3", "sts"] },
@@ -1411,6 +1410,7 @@ test = [
     { name = "pytest-cov" },
     { name = "pytest-httpx" },
     { name = "pytest-sugar" },
+    { name = "tomlkit" },
 ]
 
 [package.metadata]
@@ -1439,10 +1439,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [
-    { name = "pre-commit", specifier = ">=4.1.0" },
-    { name = "tomlkit", specifier = ">=0.15.1" },
-]
+dev = [{ name = "pre-commit", specifier = ">=4.1.0" }]
 lint = [
     { name = "boto3-stubs", extras = ["s3", "sts"], specifier = ">=1.36.6" },
     { name = "ruff", specifier = ">=0.15.6" },
@@ -1454,6 +1451,7 @@ test = [
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-httpx", specifier = ">=0.35.0" },
     { name = "pytest-sugar", specifier = ">=1.0.0" },
+    { name = "tomlkit", specifier = ">=0.15.1" },
 ]
 
 [[package]]
