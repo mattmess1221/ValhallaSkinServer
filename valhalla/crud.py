@@ -117,13 +117,13 @@ class CRUD:
             self.db.add(user)
 
             await self.db.commit()
-            await self.db.refresh(user)
         elif user.name != name:
             await self._clear_duplicate_names(name)
             user.name = name
 
             await self.db.commit()
 
+        await self.db.refresh(user)
         return user
 
     async def get_upload(self, texture_hash: str) -> models.Upload | None:

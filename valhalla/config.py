@@ -46,6 +46,19 @@ def generate_server_id() -> str:
 class Settings(BaseSettings):
     env: Env = Field(default=Env.PRODUCTION, exclude=True)
 
+    online_mode: bool = Field(
+        default=True,
+        description="""
+Disable this setting to remove the requirement for users to sign into Minecraft before
+uploading their skins.
+
+It is similar to the online-mode setting in the Minecraft server.properties file.
+
+WARNING:
+    This setting is intended for development purposes. Setting it to false in production
+    is not supported or recommended.
+        """,
+    )
     texture_type_denylist: frozenset[Literal["skin", "cape", "elytra"]] = Field(
         default=frozenset({"cape"}),
         description="List of textures which will be denied upload.",

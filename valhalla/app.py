@@ -1,3 +1,4 @@
+import logging
 import os
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -16,9 +17,17 @@ from . import api, limit, models
 from .config import settings
 from .database import engine
 
+log = logging.getLogger("uvicorn.error")
+
 
 @asynccontextmanager
 async def app_lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
+    if settings.online_mode is True:
+        log.warning(
+            "enable_offline is set to true. This is insecure and it's recommended to"
+            " set it to false."
+        )
+
     async with engine.begin() as session:
         await session.run_sync(models.Base.metadata.create_all)
 

@@ -1,4 +1,15 @@
 
+# Disable this setting to remove the requirement for users to sign into Minecraft before
+# uploading their skins.
+#
+# It is similar to the online-mode setting in the Minecraft server.properties file.
+#
+# WARNING:
+#     This setting is intended for development purposes. Setting it to false in production
+#     is not supported or recommended.
+#
+# online_mode = true
+
 # List of textures which will be denied upload.
 #
 # Valid values: ["skin", "cape", "elytra"]

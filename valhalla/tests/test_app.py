@@ -1,7 +1,7 @@
 import json
 from io import BytesIO
 from pathlib import Path
-from uuid import uuid4
+from uuid import UUID
 
 import pytest
 from pytest_httpx import HTTPXMock
@@ -69,7 +69,8 @@ def test_texture_upload_post(
     assert byname_resp.json()["textures"] == textures
 
 
-def test_unknown_user_textures(client: TestClient, user: TestUser) -> None:
+def test_unknown_user_textures(client: TestClient) -> None:
+    user = TestUser("UnknownUserName")
     resp = client.get(f"/api/v1/user/{user.uuid}")
     assert resp.status_code == 404
     resp = client.get(f"/api/v1/user/lookup/name/{user.name}6")
@@ -170,11 +171,29 @@ def test_skin_delete(client: TestClient, user: TestUser) -> None:
     assert resp.status_code == 200
 
 
-async def test_multiple_users_with_same_name(client: TestClient) -> None:
-    id1 = TestUser(uuid4(), "username")
-    id2 = TestUser(uuid4(), "UserName")
+async def test_multiple_users_with_same_name(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    client: TestClient,
+) -> None:
+    uuid = UUID("526d5b75-3b09-47fb-8f91-1efc8d2523a4")
 
+    monkeypatch.setattr(settings, "online_mode", True)
+    httpx_mock.add_response(
+        method="GET",
+        url=f"https://sessionserver.mojang.com/session/minecraft/hasJoined?username=username&serverId={settings.server_id}",
+        json={"id": str(uuid), "name": "username"},
+    )
+    httpx_mock.add_response(
+        method="GET",
+        url=f"https://sessionserver.mojang.com/session/minecraft/hasJoined?username=UserName&serverId={settings.server_id}",
+        json={"id": str(uuid), "name": "UserName"},
+    )
+
+    id1 = TestUser("username").login(client)
     client.post("/api/v1/textures", headers=id1.auth_header)
+
+    id2 = TestUser("UserName").login(client)
     client.post("/api/v1/textures", headers=id2.auth_header)
 
     async with TestingSessionLocal() as con:

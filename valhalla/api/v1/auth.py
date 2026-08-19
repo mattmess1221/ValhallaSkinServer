@@ -1,4 +1,6 @@
+import hashlib
 import secrets
+import uuid
 from datetime import timedelta
 from typing import Annotated
 
@@ -44,6 +46,7 @@ async def minecraft_login(
     return LoginMinecraftHandshakeResponse(
         server_id=settings.server_id,
         verify_token=verify_token,
+        offline=not settings.online_mode,
     )
 
 
@@ -64,12 +67,21 @@ async def minecraft_login_callback(
     if addr != client:
         raise HTTPException(403)
 
-    joined = await mojang.has_joined(
-        username=name,
-        server_id=settings.server_id,
-    )
+    if settings.online_mode:
+        joined = await mojang.has_joined(
+            username=name,
+            server_id=settings.server_id,
+        )
+        uid = joined.id
+        name = joined.name
+    else:
+        # offline mode
+        # calculate the offline player id instead of asking mojang
+        offline_name = f"OfflinePlayer:{name}".encode()
+        hash = hashlib.md5(offline_name, usedforsecurity=False).digest()
+        uid = uuid.UUID(bytes=hash)
 
-    user = await crud.get_or_create_user(joined.id, joined.name)
+    user = await crud.get_or_create_user(uid, name)
     token = auth.token_from_user(user, expire_in=timedelta(hours=1))
     auth_header = f"Bearer {token}"
 
